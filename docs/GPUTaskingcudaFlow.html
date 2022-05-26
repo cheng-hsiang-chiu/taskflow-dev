@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cookbook &raquo; GPU Tasking (cudaFlow) | Taskflow QuickStart</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600" />
+  <link rel="stylesheet" href="m-dark+documentation.compiled.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#22272e" />
+</head>
+<body>
+<header><nav id="navigation">
+  <div class="m-container">
+    <div class="m-row">
+      <span id="m-navbar-brand" class="m-col-t-8 m-col-m-none m-left-m">
+        <a href="https://taskflow.github.io"><img src="taskflow_logo.png" alt="" />Taskflow</a> <span class="m-breadcrumb">|</span> <a href="index.html" class="m-thin">QuickStart</a>
+      </span>
+      <div class="m-col-t-4 m-hide-m m-text-right m-nopadr">
+        <a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+          <path id="m-doc-search-icon-path" d="m6 0c-3.31 0-6 2.69-6 6 0 3.31 2.69 6 6 6 1.49 0 2.85-0.541 3.89-1.44-0.0164 0.338 0.147 0.759 0.5 1.15l3.22 3.79c0.552 0.614 1.45 0.665 2 0.115 0.55-0.55 0.499-1.45-0.115-2l-3.79-3.22c-0.392-0.353-0.812-0.515-1.15-0.5 0.895-1.05 1.44-2.41 1.44-3.89 0-3.31-2.69-6-6-6zm0 1.56a4.44 4.44 0 0 1 4.44 4.44 4.44 4.44 0 0 1-4.44 4.44 4.44 4.44 0 0 1-4.44-4.44 4.44 4.44 0 0 1 4.44-4.44z"/>
+        </svg></a>
+        <a id="m-navbar-show" href="#navigation" title="Show navigation"></a>
+        <a id="m-navbar-hide" href="#" title="Hide navigation"></a>
+      </div>
+      <div id="m-navbar-collapse" class="m-col-t-12 m-show-m m-col-m-none m-right-m">
+        <div class="m-row">
+          <ol class="m-col-t-6 m-col-m-none">
+            <li><a href="pages.html">Handbook</a></li>
+            <li><a href="namespaces.html">Namespaces</a></li>
+          </ol>
+          <ol class="m-col-t-6 m-col-m-none" start="3">
+            <li><a href="annotated.html">Classes</a></li>
+            <li><a href="files.html">Files</a></li>
+            <li class="m-show-m"><a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+              <use href="#m-doc-search-icon-path" />
+            </svg></a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav></header>
+<main><article>
+  <div class="m-container m-container-inflatable">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <h1>
+          <span class="m-breadcrumb"><a href="Cookbook.html">Cookbook</a> &raquo;</span>
+          GPU Tasking (cudaFlow)
+        </h1>
+        <div class="m-block m-default">
+          <h3>Contents</h3>
+          <ul>
+            <li><a href="#GPUTaskingcudaFlowIncludeTheHeader">Include the Header</a></li>
+            <li><a href="#Create_a_cudaFlow">Create a cudaFlow</a></li>
+            <li><a href="#Compile_a_cudaFlow_program">Compile a cudaFlow Program</a></li>
+            <li><a href="#run_a_cudaflow_on_a_specific_gpu">Run a cudaFlow on Specific GPU</a></li>
+            <li><a href="#GPUMemoryOperations">Create Memory Operation Tasks</a></li>
+            <li><a href="#StudyThecudaFlowGranularity">Study the Granularity</a></li>
+            <li><a href="#OffloadAcudaFlow">Offload a cudaFlow</a></li>
+            <li><a href="#UpdateAcudaFlow">Update a cudaFlow</a></li>
+            <li><a href="#UsecudaFlowInAStandaloneEnvironment">Use cudaFlow in a Standalone Environment</a></li>
+          </ul>
+        </div>
+<p>Modern scientific computing typically leverages GPU-powered parallel processing cores to speed up large-scale applications. This chapter discusses how to implement CPU-GPU heterogeneous tasking algorithms with <a href="https://developer.nvidia.com/cuda-zone">Nvidia CUDA</a>.</p><section id="GPUTaskingcudaFlowIncludeTheHeader"><h2><a href="#GPUTaskingcudaFlowIncludeTheHeader">Include the Header</a></h2><p>You need to include the header file, <code>taskflow/cuda/cudaflow.hpp</code>, for creating a <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> task.</p></section><section id="Create_a_cudaFlow"><h2><a href="#Create_a_cudaFlow">Create a cudaFlow</a></h2><p>Taskflow leverages <a href="https://developer.nvidia.com/blog/cuda-graphs/">CUDA Graph</a> to enable concurrent CPU-GPU tasking using a task graph model, <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a>. A cudaFlow is a task in a taskflow and is associated with a CUDA graph to execute multiple dependent GPU operations in a single CPU call. To create a cudaFlow task, emplace a callable with an argument of type <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a>. The following example implements the canonical saxpy (A·X Plus Y) task graph using <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a>.</p><pre class="m-code"><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="err">#</span><span class="n">include</span><span class="w"> </span><span class="o">&lt;</span><span class="n">taskflow</span><span class="o">/</span><span class="n">cuda</span><span class="o">/</span><span class="n">cudaflow</span><span class="p">.</span><span class="n">hpp</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w"> </span><span class="mi">2</span><span class="o">:</span><span class="w"> </span>
+<span class="w"> </span><span class="mi">3</span><span class="o">:</span><span class="w"> </span><span class="c1">// saxpy (single-precision A·X Plus Y) kernel</span>
+<span class="w"> </span><span class="mi">4</span><span class="o">:</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">saxpy</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="mi">5</span><span class="o">:</span><span class="w">   </span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="o">*</span><span class="n">blockDim</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span><span class="w"></span>
+<span class="w"> </span><span class="mi">6</span><span class="o">:</span><span class="w">   </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="mi">7</span><span class="o">:</span><span class="w">     </span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="o">*</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">];</span><span class="w"></span>
+<span class="w"> </span><span class="mi">8</span><span class="o">:</span><span class="w">   </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span><span class="mi">9</span><span class="o">:</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="mi">10</span><span class="o">:</span><span class="w"></span>
+<span class="mi">11</span><span class="o">:</span><span class="w"> </span><span class="c1">// main function begins</span>
+<span class="mi">12</span><span class="o">:</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="mi">13</span><span class="o">:</span><span class="w"></span>
+<span class="mi">14</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="w"> </span><span class="n">taskflow</span><span class="p">;</span><span class="w"></span>
+<span class="mi">15</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">Executor</span><span class="w"> </span><span class="n">executor</span><span class="p">;</span><span class="w"></span>
+<span class="mi">16</span><span class="o">:</span><span class="w">  </span>
+<span class="mi">17</span><span class="o">:</span><span class="w">   </span><span class="k">const</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="o">&lt;&lt;</span><span class="mi">20</span><span class="p">;</span><span class="w">                            </span><span class="c1">// size of the vector</span>
+<span class="mi">18</span><span class="o">:</span><span class="w"></span>
+<span class="mi">19</span><span class="o">:</span><span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">hx</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0f</span><span class="p">);</span><span class="w">                      </span><span class="c1">// x vector at host</span>
+<span class="mi">20</span><span class="o">:</span><span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">hy</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">);</span><span class="w">                      </span><span class="c1">// y vector at host</span>
+<span class="mi">21</span><span class="o">:</span><span class="w"></span>
+<span class="mi">22</span><span class="o">:</span><span class="w">   </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">dx</span><span class="p">{</span><span class="k">nullptr</span><span class="p">};</span><span class="w">                                  </span><span class="c1">// x vector at device</span>
+<span class="mi">23</span><span class="o">:</span><span class="w">   </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">dy</span><span class="p">{</span><span class="k">nullptr</span><span class="p">};</span><span class="w">                                  </span><span class="c1">// y vector at device</span>
+<span class="mi">24</span><span class="o">:</span><span class="w">  </span>
+<span class="mi">25</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">allocate_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="mi">26</span><span class="o">:</span><span class="w">     </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](){</span><span class="w"> </span><span class="n">cudaMalloc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));}</span><span class="w"></span>
+<span class="mi">27</span><span class="o">:</span><span class="w">   </span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;allocate_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">28</span><span class="o">:</span><span class="w"></span>
+<span class="mi">29</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">allocate_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="mi">30</span><span class="o">:</span><span class="w">     </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](){</span><span class="w"> </span><span class="n">cudaMalloc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));}</span><span class="w"></span>
+<span class="mi">31</span><span class="o">:</span><span class="w">   </span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;allocate_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">32</span><span class="o">:</span><span class="w"></span>
+<span class="mi">33</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">cudaflow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="mi">34</span><span class="o">:</span><span class="w">     </span><span class="c1">// create data transfer tasks</span>
+<span class="mi">35</span><span class="o">:</span><span class="w">     </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_x&quot;</span><span class="p">);</span><span class="w"> </span>
+<span class="mi">36</span><span class="o">:</span><span class="w">     </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">37</span><span class="o">:</span><span class="w">     </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">38</span><span class="o">:</span><span class="w">     </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">39</span><span class="o">:</span><span class="w"></span>
+<span class="mi">40</span><span class="o">:</span><span class="w">     </span><span class="c1">// launch saxpy&lt;&lt;&lt;(N+255)/256, 256, 0&gt;&gt;&gt;(N, 2.0f, dx, dy)</span>
+<span class="mi">41</span><span class="o">:</span><span class="w">     </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">kernel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">(</span><span class="w"></span>
+<span class="mi">42</span><span class="o">:</span><span class="w">       </span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">saxpy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="w"></span>
+<span class="mi">43</span><span class="o">:</span><span class="w">     </span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">44</span><span class="o">:</span><span class="w"></span>
+<span class="mi">45</span><span class="o">:</span><span class="w">     </span><span class="n">kernel</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">h2d_x</span><span class="p">,</span><span class="w"> </span><span class="n">h2d_y</span><span class="p">)</span><span class="w"></span>
+<span class="mi">46</span><span class="o">:</span><span class="w">           </span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">d2h_x</span><span class="p">,</span><span class="w"> </span><span class="n">d2h_y</span><span class="p">);</span><span class="w"></span>
+<span class="mi">48</span><span class="o">:</span><span class="w">   </span><span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="mi">49</span><span class="o">:</span><span class="w">   </span><span class="n">cudaflow</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">allocate_x</span><span class="p">,</span><span class="w"> </span><span class="n">allocate_y</span><span class="p">);</span><span class="w">  </span><span class="c1">// overlap memory alloc</span>
+<span class="mi">50</span><span class="o">:</span><span class="w">  </span>
+<span class="mi">51</span><span class="o">:</span><span class="w">   </span><span class="n">executor</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">taskflow</span><span class="p">).</span><span class="n">wait</span><span class="p">();</span><span class="w"></span>
+<span class="mi">52</span><span class="o">:</span><span class="w"></span>
+<span class="mi">53</span><span class="o">:</span><span class="w">   </span><span class="n">taskflow</span><span class="p">.</span><span class="n">dump</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="p">);</span><span class="w">                  </span><span class="c1">// dump the taskflow</span>
+<span class="mi">54</span><span class="o">:</span><span class="w"> </span><span class="p">}</span><span class="w"></span></pre><div class="m-graph"><svg style="width: 29.688rem; height: 14.562rem;" viewBox="0.00 0.00 474.72 232.77">
+<g transform="scale(1 1) rotate(0) translate(4 228.77)">
+<title>Taskflow</title>
+<g class="m-cluster">
+<title>cluster_p0x55b2191178a8</title>
+<polygon points="8,-47.38 8,-180.38 458.72,-180.38 458.72,-47.38 8,-47.38"/>
+<text text-anchor="middle" x="233.36" y="-163.58">cudaFlow: saxpy</text>
+</g>
+<g class="m-node m-flat">
+<title>p0x55b219117698</title>
+<ellipse cx="293.79" cy="-206.38" rx="62.87" ry="18.27"/>
+<text text-anchor="middle" x="293.79" y="-202.58">allocate_x</text>
+</g>
+<g class="m-node">
+<title>p0x55b2191178a8</title>
+<polygon points="450.72,-118.38 447.72,-122.38 426.72,-122.38 423.72,-118.38 392.72,-118.38 392.72,-82.38 450.72,-82.38 450.72,-118.38"/>
+<text text-anchor="middle" x="421.72" y="-96.58">saxpy</text>
+</g>
+<g class="m-edge">
+<title>p0x55b219117698&#45;&gt;p0x55b2191178a8</title>
+<path d="M340,-193.84C345.9,-191.21 351.65,-188.08 356.72,-184.38 377.37,-169.31 394.51,-145.74 405.84,-127.39"/>
+<polygon points="408.96,-128.99 411.07,-118.61 402.95,-125.41 408.96,-128.99"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x55b2191177a0</title>
+<ellipse cx="293.79" cy="-18.38" rx="62.87" ry="18.27"/>
+<text text-anchor="middle" x="293.79" y="-14.58">allocate_y</text>
+</g>
+<g class="m-edge">
+<title>p0x55b2191177a0&#45;&gt;p0x55b2191178a8</title>
+<path d="M335.09,-32.3C342.51,-35.51 350.02,-39.23 356.72,-43.38 370.89,-52.18 384.93,-64.21 396.23,-74.95"/>
+<polygon points="393.98,-77.64 403.58,-82.12 398.86,-72.63 393.98,-77.64"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870401a50</title>
+<ellipse cx="58.43" cy="-128.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="58.43" y="-124.58">h2d_x</text>
+</g>
+<g class="m-node">
+<title>p0x7f2870402bc0</title>
+<polygon points="194.85,-118.38 140.85,-118.38 136.85,-114.38 136.85,-82.38 190.85,-82.38 194.85,-86.38 194.85,-118.38"/>
+<polyline points="190.85,-114.38 136.85,-114.38 "/>
+<polyline points="190.85,-114.38 190.85,-82.38 "/>
+<polyline points="190.85,-114.38 194.85,-118.38 "/>
+<text text-anchor="middle" x="165.85" y="-96.58">saxpy</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870401a50&#45;&gt;p0x7f2870402bc0</title>
+<path d="M95.12,-118.91C105.24,-116.22 116.31,-113.28 126.58,-110.55"/>
+<polygon points="127.76,-113.86 136.52,-107.91 125.96,-107.09 127.76,-113.86"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870402310</title>
+<ellipse cx="293.79" cy="-73.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="293.79" y="-69.58">d2h_x</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402bc0&#45;&gt;p0x7f2870402310</title>
+<path d="M195.11,-94.33C210.03,-91.13 228.72,-87.12 245.74,-83.47"/>
+<polygon points="246.49,-86.89 255.54,-81.37 245.02,-80.05 246.49,-86.89"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870402780</title>
+<ellipse cx="293.79" cy="-128.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="293.79" y="-124.58">d2h_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402bc0&#45;&gt;p0x7f2870402780</title>
+<path d="M195.11,-106.67C210.03,-109.98 228.72,-114.14 245.74,-117.93"/>
+<polygon points="245.01,-121.35 255.54,-120.1 246.53,-114.52 245.01,-121.35"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870401eb0</title>
+<ellipse cx="58.43" cy="-73.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="58.43" y="-69.58">h2d_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870401eb0&#45;&gt;p0x7f2870402bc0</title>
+<path d="M95.41,-82.6C105.52,-85.19 116.55,-88.01 126.78,-90.63"/>
+<polygon points="126.12,-94.08 136.68,-93.17 127.86,-87.3 126.12,-94.08"/>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402310&#45;&gt;p0x55b2191178a8</title>
+<path d="M332.23,-81.41C348.05,-84.8 366.46,-88.75 382.37,-92.16"/>
+<polygon points="381.91,-95.64 392.42,-94.32 383.38,-88.8 381.91,-95.64"/>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402780&#45;&gt;p0x55b2191178a8</title>
+<path d="M331.89,-120.14C347.84,-116.59 366.47,-112.45 382.54,-108.87"/>
+<polygon points="383.67,-112.21 392.67,-106.62 382.15,-105.37 383.67,-112.21"/>
+</g>
+</g>
+</svg>
+</div><p>Debrief:</p><ul><li>Lines 3-9 define a saxpy kernel using CUDA</li><li>Lines 19-20 declare two host vectors, <code>hx</code> and <code>hy</code></li><li>Lines 22-23 declare two device vector pointers, <code>dx</code> and <code>dy</code></li><li>Lines 25-31 declare two tasks to allocate memory for <code>dx</code> and <code>dy</code> on device, each of <code>N*sizeof(float)</code> bytes</li><li>Lines 33-48 create a cudaFlow to define a GPU task graph that contains:<ul><li>two host-to-device data transfer tasks</li><li>one saxpy kernel task</li><li>two device-to-host data transfer tasks</li></ul></li><li>Lines 49-53 define the task dependency between host tasks and the cudaFlow tasks and execute the taskflow</li></ul>
+<p><a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> is a lightweight abstraction over CUDA Graph. We do not expend yet another effort on simplifying kernel programming but focus on tasking CUDA operations and their dependencies. This organization lets users fully take advantage of CUDA featuress that are commensurate with their domain knowledge, while leaving difficult task parallelism details to Taskflow.</p></section><section id="Compile_a_cudaFlow_program"><h2><a href="#Compile_a_cudaFlow_program">Compile a cudaFlow Program</a></h2><p>Use <a href="https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html">nvcc</a> to compile a cudaFlow program:</p><pre class="m-console"><span class="go">~$ nvcc -std=c++17 my_cudaflow.cu -I path/to/include/taskflow -O2 -o my_cudaflow</span>
+<span class="go">~$ ./my_cudaflow</span></pre><p>Please visit the page <a href="CompileTaskflowWithCUDA.html" class="m-doc">Compile Taskflow with CUDA</a> for more details.</p></section><section id="run_a_cudaflow_on_a_specific_gpu"><h2><a href="#run_a_cudaflow_on_a_specific_gpu">Run a cudaFlow on Specific GPU</a></h2><p>By default, a cudaFlow runs on the current CUDA GPU associated with the caller, which is typically GPU <code>0</code>. Each CUDA GPU has an integer identifier in the range of <code>[0, N)</code>, where <code>N</code> is the number of CUDA GPUs in a system. You can run a <a href="classtf_1_1cudaFlow.html" class="m-doc">cudaFlow</a> on a specific GPU using <a href="classtf_1_1FlowBuilder.html#afdf47fd1a358fb64f8c1b89e2a393169" class="m-doc">tf::<wbr />Taskflow::<wbr />emplace_on</a>. The code below creates a <a href="classtf_1_1cudaFlow.html" class="m-doc">cudaFlow</a> that runs on GPU <code>2</code>.</p><pre class="m-code"><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace_on</span><span class="p">([]</span><span class="w"> </span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cudaflow</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// here, cudaflow is under GPU 2</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">},</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span><span class="w">  </span><span class="c1">// place the cudaFlow on GPU 2</span></pre><aside class="m-note m-warning"><h4>Attention</h4><p><a href="classtf_1_1FlowBuilder.html#afdf47fd1a358fb64f8c1b89e2a393169" class="m-doc">tf::<wbr />Taskflow::<wbr />emplace_on</a> allows you to place a cudaFlow on a particular GPU device, but it is your responsibility to ensure correct memory access. For example, you may not allocate a memory block on GPU <code>2</code> while accessing it from a kernel on GPU <code>0</code>.</p></aside><p>An easy practice is to allocate <em>unified shared memory</em> using <code>cudaMallocManaged</code> and let the CUDA runtime perform automatic memory migration between GPUs.</p></section><section id="GPUMemoryOperations"><h2><a href="#GPUMemoryOperations">Create Memory Operation Tasks</a></h2><p><a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> provides a set of methods for users to manipulate device memory. There are two categories, <em>raw</em> data and <em>typed</em> data. Raw data operations are methods with prefix <code>mem</code>, such as <code>memcpy</code> and <code>memset</code>, that operate in <em>bytes</em>. Typed data operations such as <code>copy</code>, <code>fill</code>, and <code>zero</code>, take <em>logical count</em> of elements. For instance, the following three methods have the same result of zeroing <code>sizeof(int)*count</code> bytes of the device memory area pointed to by <code>target</code>.</p><pre class="m-code"><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">target</span><span class="p">;</span><span class="w"></span>
+<span class="n">cudaMalloc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span><span class="w"></span>
+<span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">memset_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">memset</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">same_as_above</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">fill</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">same_as_above_again</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">zero</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span></pre><p>The method <a href="classtf_1_1cudaFlow.html#a21d4447bc834f4d3e1bb4772c850d090" class="m-doc">cudaFlow::<wbr />fill</a> is a more powerful version of <a href="classtf_1_1cudaFlow.html#a079ca65da35301e5aafd45878a19e9d2" class="m-doc">cudaFlow::<wbr />memset</a>. It can fill a memory area with any value of type <code>T</code>, given that <code>sizeof(T)</code> is 1, 2, or 4 bytes. For example, the following code sets each element in the array <code>target</code> to 1234.</p><pre class="m-code"><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">){</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">fill</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"> </span><span class="p">});</span><span class="w"></span></pre><p>Similar concept applies to <a href="classtf_1_1cudaFlow.html#ad37637606f0643f360e9eda1f9a6e559" class="m-doc">cudaFlow::<wbr />memcpy</a> and <a href="classtf_1_1cudaFlow.html#af03e04771b655f9e629eb4c22e19b19f" class="m-doc">cudaFlow::<wbr />copy</a> as well.</p><pre class="m-code"><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">){</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">memcpy_target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">memcpy</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">same_as_above</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">source</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span></pre></section><section id="StudyThecudaFlowGranularity"><h2><a href="#StudyThecudaFlowGranularity">Study the Granularity</a></h2><p>Creating a cudaFlow has certain overhead, which means <em>fine-grained</em> tasking such as one GPU operation per cudaFlow may not give you any performance gain. You should aggregate as many GPU operations as possible in a cudaFlow to launch the entire graph once instead of separated graphs. For example, the following code creates a fine-grained saxpy task graph using one cudaFlow per GPU operation.</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">h2d_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_x&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// creates the 1st cudaFlow</span>
+
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">h2d_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_y&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// creates the 2nd cudaFlow </span>
+
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">d2h_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_x&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// creates the 3rd cudaFlow</span>
+
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">d2h_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_y&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// creates the 4th cudaFlow</span>
+
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">kernel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">saxpy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;kernel&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// creates the 5th cudaFlow</span>
+
+<span class="n">kernel</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">h2d_x</span><span class="p">,</span><span class="w"> </span><span class="n">h2d_y</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">d2h_x</span><span class="p">,</span><span class="w"> </span><span class="n">d2h_y</span><span class="p">);</span><span class="w"></span></pre><div class="m-graph"><svg style="width: 37.250rem; height: 21.250rem;" viewBox="0.00 0.00 596.00 339.54">
+<g transform="scale(1 1) rotate(0) translate(4 335.54)">
+<title>Taskflow</title>
+<g class="m-cluster">
+<title>cluster_p0x21987b0</title>
+<polygon points="443,-166.77 443,-323.54 580,-323.54 580,-166.77 443,-166.77"/>
+<text text-anchor="middle" x="511.5" y="-306.74">cudaFlow: h2d_x</text>
+</g>
+<g class="m-cluster">
+<title>cluster_p0x2198870</title>
+<polygon points="298,-166.77 298,-323.54 435,-323.54 435,-166.77 298,-166.77"/>
+<text text-anchor="middle" x="366.5" y="-306.74">cudaFlow: h2d_y</text>
+</g>
+<g class="m-cluster">
+<title>cluster_p0x2198930</title>
+<polygon points="8,-8 8,-158.77 145,-158.77 145,-8 8,-8"/>
+<text text-anchor="middle" x="76.5" y="-141.97">cudaFlow: d2h_x</text>
+</g>
+<g class="m-cluster">
+<title>cluster_p0x21989f0</title>
+<polygon points="298,-8 298,-158.77 435,-158.77 435,-8 298,-8"/>
+<text text-anchor="middle" x="366.5" y="-141.97">cudaFlow: d2h_y</text>
+</g>
+<g class="m-cluster">
+<title>cluster_p0x2198ab0</title>
+<polygon points="153,-80.38 153,-244.77 290,-244.77 290,-80.38 153,-80.38"/>
+<text text-anchor="middle" x="221.5" y="-227.97">cudaFlow: kernel</text>
+</g>
+<g class="m-node">
+<title>p0x21987b0</title>
+<polygon points="517,-210.77 514,-214.77 493,-214.77 490,-210.77 457,-210.77 457,-174.77 517,-174.77 517,-210.77"/>
+<text text-anchor="middle" x="487" y="-188.97">h2d_x</text>
+</g>
+<g class="m-node">
+<title>p0x2198ab0</title>
+<polygon points="282,-124.38 279,-128.38 258,-128.38 255,-124.38 222,-124.38 222,-88.38 282,-88.38 282,-124.38"/>
+<text text-anchor="middle" x="252" y="-102.58">kernel</text>
+</g>
+<g class="m-edge">
+<title>p0x21987b0&#45;&gt;p0x2198ab0</title>
+<path d="M459.14,-174.74C452.73,-171.55 445.8,-168.63 439,-166.77 407.88,-158.24 322.77,-173.39 294,-158.77 282.72,-153.03 273.39,-142.76 266.41,-132.9"/>
+<polygon points="269.3,-130.92 260.89,-124.47 263.44,-134.75 269.3,-130.92"/>
+</g>
+<g class="m-node">
+<title>p0x2198930</title>
+<polygon points="131,-52 128,-56 107,-56 104,-52 71,-52 71,-16 131,-16 131,-52"/>
+<text text-anchor="middle" x="101" y="-30.2">d2h_x</text>
+</g>
+<g class="m-edge">
+<title>p0x2198ab0&#45;&gt;p0x2198930</title>
+<path d="M221.81,-91.31C198.45,-80.43 165.92,-65.26 140.5,-53.41"/>
+<polygon points="141.68,-50.1 131.14,-49.05 138.73,-56.45 141.68,-50.1"/>
+</g>
+<g class="m-node">
+<title>p0x21989f0</title>
+<polygon points="372,-52 369,-56 348,-56 345,-52 312,-52 312,-16 372,-16 372,-52"/>
+<text text-anchor="middle" x="342" y="-30.2">d2h_y</text>
+</g>
+<g class="m-edge">
+<title>p0x2198ab0&#45;&gt;p0x21989f0</title>
+<path d="M273.79,-88.35C285.31,-79.34 299.63,-68.14 312.17,-58.33"/>
+<polygon points="314.38,-61.04 320.1,-52.13 310.07,-55.53 314.38,-61.04"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7fe390000e60</title>
+<ellipse cx="493" cy="-271.15" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="493" y="-267.35">h2d_x</text>
+</g>
+<g class="m-edge">
+<title>p0x7fe390000e60&#45;&gt;p0x21987b0</title>
+<path d="M491.61,-252.44C490.88,-243.15 489.97,-231.56 489.15,-221.15"/>
+<polygon points="492.62,-220.56 488.34,-210.86 485.64,-221.11 492.62,-220.56"/>
+</g>
+<g class="m-node">
+<title>p0x2198870</title>
+<polygon points="372,-210.77 369,-214.77 348,-214.77 345,-210.77 312,-210.77 312,-174.77 372,-174.77 372,-210.77"/>
+<text text-anchor="middle" x="342" y="-188.97">h2d_y</text>
+</g>
+<g class="m-edge">
+<title>p0x2198870&#45;&gt;p0x2198ab0</title>
+<path d="M314.33,-174.71C307.39,-169.92 300.18,-164.45 294,-158.77 285.52,-150.96 277.25,-141.41 270.33,-132.67"/>
+<polygon points="273.01,-130.42 264.14,-124.62 267.46,-134.68 273.01,-130.42"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7fe390001890</title>
+<ellipse cx="348" cy="-271.15" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="348" y="-267.35">h2d_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7fe390001890&#45;&gt;p0x2198870</title>
+<path d="M346.61,-252.44C345.88,-243.15 344.97,-231.56 344.15,-221.15"/>
+<polygon points="347.62,-220.56 343.34,-210.86 340.64,-221.11 347.62,-220.56"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7fe39000b790</title>
+<ellipse cx="95" cy="-106.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="95" y="-102.58">d2h_x</text>
+</g>
+<g class="m-edge">
+<title>p0x7fe39000b790&#45;&gt;p0x2198930</title>
+<path d="M96.48,-87.99C97.14,-80.23 97.94,-70.91 98.68,-62.26"/>
+<polygon points="102.17,-62.46 99.53,-52.2 95.2,-61.86 102.17,-62.46"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7fe3900017e0</title>
+<ellipse cx="348" cy="-106.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="348" y="-102.58">d2h_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7fe3900017e0&#45;&gt;p0x21989f0</title>
+<path d="M346.52,-87.99C345.86,-80.23 345.06,-70.91 344.32,-62.26"/>
+<polygon points="347.8,-61.86 343.47,-52.2 340.83,-62.46 347.8,-61.86"/>
+</g>
+<g class="m-node">
+<title>p0x7fe390002000</title>
+<polygon points="281,-210.77 227,-210.77 223,-206.77 223,-174.77 277,-174.77 281,-178.77 281,-210.77"/>
+<polyline points="277,-206.77 223,-206.77 "/>
+<polyline points="277,-206.77 277,-174.77 "/>
+<polyline points="277,-206.77 281,-210.77 "/>
+<text text-anchor="middle" x="252" y="-188.97">saxpy</text>
+</g>
+<g class="m-edge">
+<title>p0x7fe390002000&#45;&gt;p0x2198ab0</title>
+<path d="M252,-174.69C252,-163.26 252,-147.95 252,-134.82"/>
+<polygon points="255.5,-134.44 252,-124.44 248.5,-134.44 255.5,-134.44"/>
+</g>
+</g>
+</svg>
+</div><p>The following code aggregates the five GPU operations using one cudaFlow to achieve better performance.</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">cudaflow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">saxpy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">saxpy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="p">)</span><span class="w"></span>
+<span class="w">                         </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">saxpy</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">h2d_x</span><span class="p">,</span><span class="w"> </span><span class="n">h2d_y</span><span class="p">)</span><span class="w"></span>
+<span class="w">       </span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">d2h_x</span><span class="p">,</span><span class="w"> </span><span class="n">d2h_y</span><span class="p">);</span><span class="w"></span>
+<span class="p">}).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// creates one cudaFlow</span></pre><div class="m-graph"><svg style="width: 19.250rem; height: 6.250rem;" viewBox="0.00 0.00 307.71 99.77">
+<g transform="scale(1 1) rotate(0) translate(4 95.77)">
+<title>Taskflow</title>
+<g class="m-node m-flat">
+<title>p0x7f2870401a50</title>
+<ellipse cx="42.43" cy="-73.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="42.43" y="-69.58">h2d_x</text>
+</g>
+<g class="m-node">
+<title>p0x7f2870402bc0</title>
+<polygon points="178.85,-63.38 124.85,-63.38 120.85,-59.38 120.85,-27.38 174.85,-27.38 178.85,-31.38 178.85,-63.38"/>
+<polyline points="174.85,-59.38 120.85,-59.38 "/>
+<polyline points="174.85,-59.38 174.85,-27.38 "/>
+<polyline points="174.85,-59.38 178.85,-63.38 "/>
+<text text-anchor="middle" x="149.85" y="-41.58">saxpy</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870401a50&#45;&gt;p0x7f2870402bc0</title>
+<path d="M79.12,-63.91C89.24,-61.22 100.31,-58.28 110.58,-55.55"/>
+<polygon points="111.76,-58.86 120.52,-52.91 109.96,-52.09 111.76,-58.86"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870402310</title>
+<ellipse cx="257.28" cy="-73.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="257.28" y="-69.58">d2h_x</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402bc0&#45;&gt;p0x7f2870402310</title>
+<path d="M179.11,-52.89C188.91,-55.49 200.17,-58.48 211,-61.36"/>
+<polygon points="210.21,-64.77 220.77,-63.95 212.01,-58 210.21,-64.77"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870402780</title>
+<ellipse cx="257.28" cy="-18.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="257.28" y="-14.58">d2h_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870402bc0&#45;&gt;p0x7f2870402780</title>
+<path d="M179.11,-38.15C188.82,-35.66 199.96,-32.81 210.69,-30.06"/>
+<polygon points="211.57,-33.45 220.38,-27.58 209.83,-26.67 211.57,-33.45"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7f2870401eb0</title>
+<ellipse cx="42.43" cy="-18.38" rx="42.35" ry="18.27"/>
+<text text-anchor="middle" x="42.43" y="-14.58">h2d_y</text>
+</g>
+<g class="m-edge">
+<title>p0x7f2870401eb0&#45;&gt;p0x7f2870402bc0</title>
+<path d="M79.41,-27.6C89.52,-30.19 100.55,-33.01 110.78,-35.63"/>
+<polygon points="110.12,-39.08 120.68,-38.17 111.86,-32.3 110.12,-39.08"/>
+</g>
+</g>
+</svg>
+</div><aside class="m-note m-info"><h4>Note</h4><p>We encourage users to understand the parallel structure of their applications to come up with the best granularity of task decomposition. A refined task graph can have significant performance difference from the raw counterpart.</p></aside></section><section id="OffloadAcudaFlow"><h2><a href="#OffloadAcudaFlow">Offload a cudaFlow</a></h2><p>By default, the executor offloads and executes the cudaFlow <em>once</em>, if the cudaFlow is never offloaded from its callable. During the execution, the executor first materializes the cudaFlow by mapping it to a native CUDA graph, creates an executable graph from the native CUDA graph, and then submit the executable graph to the CUDA runtime. Similar to <a href="classtf_1_1Executor.html" class="m-doc">tf::<wbr />Executor</a>, <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> provides several offload methods to run the GPU task graph:</p><pre class="m-code"><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// ... create CUDA tasks</span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w">      </span><span class="c1">// offload the cudaFlow and run it once</span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">offload_n</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span><span class="w">  </span><span class="c1">// offload the cudaFlow and run it 10 times</span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">offload_until</span><span class="p">([</span><span class="n">repeat</span><span class="o">=</span><span class="mi">5</span><span class="p">]</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="k">mutable</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">repeat</span><span class="o">--</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="p">})</span><span class="w">  </span><span class="c1">// five times</span>
+<span class="p">});</span><span class="w"></span></pre><p>After you offload a cudaFlow, it is considered executed, and the executor will <em>not</em> run an offloaded cudaFlow after leaving the cudaFlow task callable. On the other hand, if a cudaFlow is not offloaded, the executor runs it once. For example, the following two versions represent the same execution logic.</p><pre class="m-code"><span class="c1">// version 1: explicitly offload a cudaFlow once</span>
+<span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">single_task</span><span class="p">([]</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="p">(){});</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+
+<span class="c1">// version 2 (same as version 1): executor offloads the cudaFlow once</span>
+<span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">sf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cf</span><span class="p">.</span><span class="n">single_task</span><span class="p">([]</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="p">(){});</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span></pre></section><section id="UpdateAcudaFlow"><h2><a href="#UpdateAcudaFlow">Update a cudaFlow</a></h2><p>Many GPU applications require you to launch a cudaFlow multiple times and update node parameters (e.g., kernel parameters and memory addresses) between iterations. <a href="classtf_1_1cudaFlow.html#a85789ed8a1f47704cf1f1a2b98969444" class="m-doc">tf::<wbr />cudaFlow::<wbr />offload</a> allows you to execute the graph immediately and then update the parameters for the next execution. When you offload a cudaFlow, an executable graph will be created, and you must NOT change the topology but the node parameters between successive executions.</p><pre class="m-code"><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([</span><span class="o">&amp;</span><span class="p">]</span><span class="w"> </span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">cf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="mi">2</span><span class="o">:</span><span class="w">   </span><span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">grid1</span><span class="p">,</span><span class="w"> </span><span class="n">block1</span><span class="p">,</span><span class="w"> </span><span class="n">shm1</span><span class="p">,</span><span class="w"> </span><span class="n">my_kernel</span><span class="p">,</span><span class="w"> </span><span class="n">args1</span><span class="p">...);</span><span class="w"></span>
+<span class="mi">3</span><span class="o">:</span><span class="w">   </span><span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w">  </span><span class="c1">// immediately run the cudaFlow once</span>
+<span class="mi">4</span><span class="o">:</span><span class="w"></span>
+<span class="mi">5</span><span class="o">:</span><span class="w">   </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="w"> </span><span class="n">grid2</span><span class="p">,</span><span class="w"> </span><span class="n">block2</span><span class="p">,</span><span class="w"> </span><span class="n">shm2</span><span class="p">,</span><span class="w"> </span><span class="n">my_kernel</span><span class="p">,</span><span class="w"> </span><span class="n">args2</span><span class="p">...);</span><span class="w"></span>
+<span class="mi">6</span><span class="o">:</span><span class="w">   </span><span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w">  </span><span class="c1">// run the cudaFlow again with the same graph topology</span>
+<span class="mi">7</span><span class="o">:</span><span class="w">                  </span><span class="c1">// but with different kernel parameters</span>
+<span class="mi">8</span><span class="o">:</span><span class="w"> </span><span class="p">});</span><span class="w"></span></pre><p>Debrief:</p><ul><li>Line 2 creates a kernel task to run <code>my_kernel</code> with the given parameters.</li><li>Line 3 offloads the cudaFlow and performs an immediate execution.</li><li>Line 5 updates the parameters of <code>my_kernel</code> through its task.</li><li>Line 6 executes the cudaFlow again with updated kernel parameters.</li></ul><p>Between successive offloads (i.e., executions of a cudaFlow), you can update the task parameters, such as changing the kernel execution parameters and memory operation parameters. However, you must <em>NOT</em> change the topology of an offloaded cudaFlow. Each method of task creation in <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> has an overload that updates the parameters of the task created from the same creation method.</p><aside class="m-note m-warning"><h4>Attention</h4><p>There are a few restrictions on updating task parameters in a cudaFlow. Notably, you must <em>NOT</em> change the topology of an offloaded graph. In addition, update methods have the following limitations:</p><ul><li>kernel task<ul><li>The kernel function is not allowed to change. This restriction applies to all algorithm tasks that are created using lambda.</li></ul></li><li>memset and memcpy tasks:<ul><li>The CUDA device(s) to which the operand(s) was allocated/mapped cannot change</li><li>The source/destination memory must be allocated from the same contexts as the original source/destination memory.</li></ul></li></ul></aside></section><section id="UsecudaFlowInAStandaloneEnvironment"><h2><a href="#UsecudaFlowInAStandaloneEnvironment">Use cudaFlow in a Standalone Environment</a></h2><p>You can use <a href="classtf_1_1cudaFlow.html" class="m-doc">tf::<wbr />cudaFlow</a> in a standalone environment without going through <a href="classtf_1_1Taskflow.html" class="m-doc">tf::<wbr />Taskflow</a> and offloads it to a GPU from the caller thread. All the features we have discussed so far apply to the standalone use. The following code gives an example of using a standalone cudaFlow to create a saxpy task graph that runs on a GPU.</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="w"> </span><span class="n">cf</span><span class="p">;</span><span class="w">  </span><span class="c1">// create a standalone cudaFlow</span>
+
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">h2d_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;h2d_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hx</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_x&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">d2h_y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hy</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">dy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">).</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;d2h_y&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaTask</span><span class="w"> </span><span class="n">saxpy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cf</span><span class="p">.</span><span class="n">kernel</span><span class="p">((</span><span class="n">N</span><span class="o">+</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">saxpy</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">,</span><span class="w"> </span><span class="n">dx</span><span class="p">,</span><span class="w"> </span><span class="n">dy</span><span class="p">)</span><span class="w"></span>
+<span class="w">                       </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;saxpy&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="n">saxpy</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">h2d_x</span><span class="p">,</span><span class="w"> </span><span class="n">h2d_y</span><span class="p">)</span><span class="w">   </span><span class="c1">// kernel runs after  host-to-device copy</span>
+<span class="w">     </span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">d2h_x</span><span class="p">,</span><span class="w"> </span><span class="n">d2h_y</span><span class="p">);</span><span class="w">  </span><span class="c1">// kernel runs before device-to-host copy</span>
+
+<span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w">  </span><span class="c1">// offload and run the standalone cudaFlow once</span></pre><p>When using cudaFlow in a standalone environment, it is your choice to decide its GPU context. The following example creates a cudaFlow and executes it on GPU 0.</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">cudaScopedDevice</span><span class="w"> </span><span class="nf">gpu</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">cudaFlow</span><span class="w"> </span><span class="n">cf</span><span class="p">;</span><span class="w">  </span><span class="c1">// create a standalone cudaFlow on GPU 0</span>
+<span class="n">cf</span><span class="p">.</span><span class="n">offload</span><span class="p">();</span><span class="w">     </span><span class="c1">// run the capturer once on GPU 0</span></pre><aside class="m-note m-info"><h4>Note</h4><p>In the standalone mode, a written cudaFlow will not be executed untile you explicitly call an offload method, as there is neither a taskflow nor an executor.</p></aside></section>
+      </div>
+    </div>
+  </div>
+</article></main>
+<div class="m-doc-search" id="search">
+  <a href="#!" onclick="return hideSearch()"></a>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-m-8 m-push-m-2">
+        <div class="m-doc-search-header m-text m-small">
+          <div><span class="m-label m-default">Tab</span> / <span class="m-label m-default">T</span> to search, <span class="m-label m-default">Esc</span> to close</div>
+          <div id="search-symbolcount">&hellip;</div>
+        </div>
+        <div class="m-doc-search-content">
+          <form>
+            <input type="search" name="q" id="search-input" placeholder="Loading &hellip;" disabled="disabled" autofocus="autofocus" autocomplete="off" spellcheck="false" />
+          </form>
+          <noscript class="m-text m-danger m-text-center">Unlike everything else in the docs, the search functionality <em>requires</em> JavaScript.</noscript>
+          <div id="search-help" class="m-text m-dim m-text-center">
+            <p class="m-noindent">Search for symbols, directories, files, pages or
+            modules. You can omit any prefix from the symbol or file path; adding a
+            <code>:</code> or <code>/</code> suffix lists all members of given symbol or
+            directory.</p>
+            <p class="m-noindent">Use <span class="m-label m-dim">&darr;</span>
+            / <span class="m-label m-dim">&uarr;</span> to navigate through the list,
+            <span class="m-label m-dim">Enter</span> to go.
+            <span class="m-label m-dim">Tab</span> autocompletes common prefix, you can
+            copy a link to the result using <span class="m-label m-dim">⌘</span>
+            <span class="m-label m-dim">L</span> while <span class="m-label m-dim">⌘</span>
+            <span class="m-label m-dim">M</span> produces a Markdown link.</p>
+          </div>
+          <div id="search-notfound" class="m-text m-warning m-text-center">Sorry, nothing was found.</div>
+          <ul id="search-results"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="search-v1.js"></script>
+<script src="searchdata-v1.js" async="async"></script>
+<footer><nav>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <p>Taskflow handbook is part of the <a href="https://taskflow.github.io">Taskflow project</a>, copyright © <a href="https://tsung-wei-huang.github.io/">Dr. Tsung-Wei Huang</a>, 2018&ndash;2022.<br />Generated by <a href="https://doxygen.org/">Doxygen</a> 1.8.20 and <a href="https://mcss.mosra.cz/">m.css</a>.</p>
+      </div>
+    </div>
+  </div>
+</nav></footer>
+</body>
+</html>

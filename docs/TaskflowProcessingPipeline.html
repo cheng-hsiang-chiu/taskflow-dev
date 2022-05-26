@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learning from Examples &raquo; Taskflow Processing Pipeline | Taskflow QuickStart</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600" />
+  <link rel="stylesheet" href="m-dark+documentation.compiled.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#22272e" />
+</head>
+<body>
+<header><nav id="navigation">
+  <div class="m-container">
+    <div class="m-row">
+      <span id="m-navbar-brand" class="m-col-t-8 m-col-m-none m-left-m">
+        <a href="https://taskflow.github.io"><img src="taskflow_logo.png" alt="" />Taskflow</a> <span class="m-breadcrumb">|</span> <a href="index.html" class="m-thin">QuickStart</a>
+      </span>
+      <div class="m-col-t-4 m-hide-m m-text-right m-nopadr">
+        <a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+          <path id="m-doc-search-icon-path" d="m6 0c-3.31 0-6 2.69-6 6 0 3.31 2.69 6 6 6 1.49 0 2.85-0.541 3.89-1.44-0.0164 0.338 0.147 0.759 0.5 1.15l3.22 3.79c0.552 0.614 1.45 0.665 2 0.115 0.55-0.55 0.499-1.45-0.115-2l-3.79-3.22c-0.392-0.353-0.812-0.515-1.15-0.5 0.895-1.05 1.44-2.41 1.44-3.89 0-3.31-2.69-6-6-6zm0 1.56a4.44 4.44 0 0 1 4.44 4.44 4.44 4.44 0 0 1-4.44 4.44 4.44 4.44 0 0 1-4.44-4.44 4.44 4.44 0 0 1 4.44-4.44z"/>
+        </svg></a>
+        <a id="m-navbar-show" href="#navigation" title="Show navigation"></a>
+        <a id="m-navbar-hide" href="#" title="Hide navigation"></a>
+      </div>
+      <div id="m-navbar-collapse" class="m-col-t-12 m-show-m m-col-m-none m-right-m">
+        <div class="m-row">
+          <ol class="m-col-t-6 m-col-m-none">
+            <li><a href="pages.html">Handbook</a></li>
+            <li><a href="namespaces.html">Namespaces</a></li>
+          </ol>
+          <ol class="m-col-t-6 m-col-m-none" start="3">
+            <li><a href="annotated.html">Classes</a></li>
+            <li><a href="files.html">Files</a></li>
+            <li class="m-show-m"><a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+              <use href="#m-doc-search-icon-path" />
+            </svg></a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav></header>
+<main><article>
+  <div class="m-container m-container-inflatable">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <h1>
+          <span class="m-breadcrumb"><a href="Examples.html">Learning from Examples</a> &raquo;</span>
+          Taskflow Processing Pipeline
+        </h1>
+        <div class="m-block m-default">
+          <h3>Contents</h3>
+          <ul>
+            <li><a href="#FormulateTheTaskflowProcessingPipelineProblem">Formulate the Taskflow Processing Pipeline Problem</a></li>
+            <li>
+              <a href="#CreateATaskflowProcessingPipeline">Create a Taskflow Processing Pipeline</a>
+              <ul>
+                <li><a href="#TaskflowPipelineDefineTaskflows">Define Taskflows</a></li>
+                <li><a href="#TaskflowPipelineDefineThePipes">Define the Pipes</a></li>
+                <li><a href="#TaskflowPipelineDefineTheTaskGraph">Define the Task Graph</a></li>
+                <li><a href="#TaskflowPipelineSubmitTheTaskGraph">Submit the Task Graph</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+<p>We study a taskflow processing pipeline that propagates a sequence of tokens through linearly dependent taskflows. The pipeline embeds a taskflow in each pipe to run a parallel algorithm using task graph parallelism.</p><section id="FormulateTheTaskflowProcessingPipelineProblem"><h2><a href="#FormulateTheTaskflowProcessingPipelineProblem">Formulate the Taskflow Processing Pipeline Problem</a></h2><p>Many complex and irregular pipeline applications require each pipe to run a parallel algorithm using task graph parallelism. We can formulate such applications as scheduling a sequence of tokens through linearly dependent taskflows. The following example illustrates the pipeline propagation of three scheduling tokens through three linearly dependent taskflows:</p><div class="m-graph"><svg style="width: 33.125rem; height: 11.750rem;" viewBox="0.00 0.00 530.00 188.00">
+<g transform="scale(1 1) rotate(0) translate(4 184)">
+<title>R</title>
+<g class="m-node m-flat">
+<title>f1_A</title>
+<polygon points="162,-180 0,-180 0,-144 162,-144 162,-180"/>
+<text text-anchor="middle" x="81" y="-158.2">taskflow1 on token 1</text>
+</g>
+<g class="m-node m-flat">
+<title>f1_B</title>
+<polygon points="342,-180 180,-180 180,-144 342,-144 342,-180"/>
+<text text-anchor="middle" x="261" y="-158.2">taskflow2 on token 1</text>
+</g>
+<g class="m-edge">
+<title>f1_A&#45;&gt;f1_B</title>
+<path d="M162.21,-162C164.71,-162 167.2,-162 169.7,-162"/>
+<polygon points="169.96,-165.5 179.96,-162 169.96,-158.5 169.96,-165.5"/>
+</g>
+<g class="m-node m-flat">
+<title>f2_A</title>
+<polygon points="162,-108 0,-108 0,-72 162,-72 162,-108"/>
+<text text-anchor="middle" x="81" y="-86.2">taskflow1 on token 2</text>
+</g>
+<g class="m-edge">
+<title>f1_A&#45;&gt;f2_A</title>
+<path d="M81,-143.7C81,-135.98 81,-126.71 81,-118.11"/>
+<polygon points="84.5,-118.1 81,-108.1 77.5,-118.1 84.5,-118.1"/>
+</g>
+<g class="m-node m-flat">
+<title>f1_C</title>
+<polygon points="522,-180 360,-180 360,-144 522,-144 522,-180"/>
+<text text-anchor="middle" x="441" y="-158.2">taskflow3 on token 1</text>
+</g>
+<g class="m-edge">
+<title>f1_B&#45;&gt;f1_C</title>
+<path d="M342.21,-162C344.71,-162 347.2,-162 349.7,-162"/>
+<polygon points="349.96,-165.5 359.96,-162 349.96,-158.5 349.96,-165.5"/>
+</g>
+<g class="m-node m-flat">
+<title>f2_B</title>
+<polygon points="342,-108 180,-108 180,-72 342,-72 342,-108"/>
+<text text-anchor="middle" x="261" y="-86.2">taskflow2 on token 2</text>
+</g>
+<g class="m-edge">
+<title>f1_B&#45;&gt;f2_B</title>
+<path d="M261,-143.7C261,-135.98 261,-126.71 261,-118.11"/>
+<polygon points="264.5,-118.1 261,-108.1 257.5,-118.1 264.5,-118.1"/>
+</g>
+<g class="m-node m-flat">
+<title>f2_C</title>
+<polygon points="522,-108 360,-108 360,-72 522,-72 522,-108"/>
+<text text-anchor="middle" x="441" y="-86.2">taskflow3 on token 2</text>
+</g>
+<g class="m-edge">
+<title>f1_C&#45;&gt;f2_C</title>
+<path d="M441,-143.7C441,-135.98 441,-126.71 441,-118.11"/>
+<polygon points="444.5,-118.1 441,-108.1 437.5,-118.1 444.5,-118.1"/>
+</g>
+<g class="m-edge">
+<title>f2_A&#45;&gt;f2_B</title>
+<path d="M162.21,-90C164.71,-90 167.2,-90 169.7,-90"/>
+<polygon points="169.96,-93.5 179.96,-90 169.96,-86.5 169.96,-93.5"/>
+</g>
+<g class="m-node m-flat">
+<title>f3_A</title>
+<polygon points="162,-36 0,-36 0,0 162,0 162,-36"/>
+<text text-anchor="middle" x="81" y="-14.2">taskflow1 on token 3</text>
+</g>
+<g class="m-edge">
+<title>f2_A&#45;&gt;f3_A</title>
+<path d="M81,-71.7C81,-63.98 81,-54.71 81,-46.11"/>
+<polygon points="84.5,-46.1 81,-36.1 77.5,-46.1 84.5,-46.1"/>
+</g>
+<g class="m-edge">
+<title>f2_B&#45;&gt;f2_C</title>
+<path d="M342.21,-90C344.71,-90 347.2,-90 349.7,-90"/>
+<polygon points="349.96,-93.5 359.96,-90 349.96,-86.5 349.96,-93.5"/>
+</g>
+<g class="m-node m-flat">
+<title>f3_B</title>
+<polygon points="342,-36 180,-36 180,0 342,0 342,-36"/>
+<text text-anchor="middle" x="261" y="-14.2">taskflow2 on token 3</text>
+</g>
+<g class="m-edge">
+<title>f2_B&#45;&gt;f3_B</title>
+<path d="M261,-71.7C261,-63.98 261,-54.71 261,-46.11"/>
+<polygon points="264.5,-46.1 261,-36.1 257.5,-46.1 264.5,-46.1"/>
+</g>
+<g class="m-node m-flat">
+<title>f3_C</title>
+<polygon points="522,-36 360,-36 360,0 522,0 522,-36"/>
+<text text-anchor="middle" x="441" y="-14.2">taskflow3 on token 3</text>
+</g>
+<g class="m-edge">
+<title>f2_C&#45;&gt;f3_C</title>
+<path d="M441,-71.7C441,-63.98 441,-54.71 441,-46.11"/>
+<polygon points="444.5,-46.1 441,-36.1 437.5,-46.1 444.5,-46.1"/>
+</g>
+<g class="m-edge">
+<title>f3_A&#45;&gt;f3_B</title>
+<path d="M162.21,-18C164.71,-18 167.2,-18 169.7,-18"/>
+<polygon points="169.96,-21.5 179.96,-18 169.96,-14.5 169.96,-21.5"/>
+</g>
+<g class="m-edge">
+<title>f3_B&#45;&gt;f3_C</title>
+<path d="M342.21,-18C344.71,-18 347.2,-18 349.7,-18"/>
+<polygon points="349.96,-21.5 359.96,-18 349.96,-14.5 349.96,-21.5"/>
+</g>
+</g>
+</svg>
+</div><div class="m-graph"><svg style="width: 29.938rem; height: 20.062rem;" viewBox="0.00 0.00 479.00 321.08">
+<g transform="scale(1 1) rotate(0) translate(4 317.08)">
+<title>G</title>
+<g class="m-cluster">
+<title>cluster_1</title>
+<polygon points="8,-80.77 8,-305.08 150,-305.08 150,-80.77 8,-80.77"/>
+<text text-anchor="middle" x="79" y="-288.28">taskflow1</text>
+</g>
+<g class="m-cluster">
+<title>cluster_2</title>
+<polygon points="158,-8 158,-305.08 241,-305.08 241,-8 158,-8"/>
+<text text-anchor="middle" x="199.5" y="-288.28">taskflow2</text>
+</g>
+<g class="m-cluster">
+<title>cluster_3</title>
+<polygon points="249,-153.54 249,-305.08 463,-305.08 463,-153.54 249,-153.54"/>
+<text text-anchor="middle" x="356" y="-288.28">taskflow3</text>
+</g>
+<g class="m-node m-flat">
+<title>A1</title>
+<ellipse cx="79" cy="-252.69" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="79" y="-248.89">A1</text>
+</g>
+<g class="m-node m-flat">
+<title>B1</title>
+<ellipse cx="43" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="43" y="-176.12">B1</text>
+</g>
+<g class="m-edge">
+<title>A1&#45;&gt;B1</title>
+<path d="M70.47,-234.92C66.16,-226.46 60.85,-216.02 56.05,-206.57"/>
+<polygon points="59.12,-204.9 51.47,-197.57 52.88,-208.07 59.12,-204.9"/>
+</g>
+<g class="m-node m-flat">
+<title>C1</title>
+<ellipse cx="115" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="115" y="-176.12">C1</text>
+</g>
+<g class="m-edge">
+<title>A1&#45;&gt;C1</title>
+<path d="M87.53,-234.92C91.84,-226.46 97.15,-216.02 101.95,-206.57"/>
+<polygon points="105.12,-208.07 106.53,-197.57 98.88,-204.9 105.12,-208.07"/>
+</g>
+<g class="m-node m-flat">
+<title>D1</title>
+<ellipse cx="79" cy="-107.15" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="79" y="-103.35">D1</text>
+</g>
+<g class="m-edge">
+<title>B1&#45;&gt;D1</title>
+<path d="M51.53,-162.15C55.84,-153.69 61.15,-143.25 65.95,-133.8"/>
+<polygon points="69.12,-135.31 70.53,-124.81 62.88,-132.13 69.12,-135.31"/>
+</g>
+<g class="m-edge">
+<title>C1&#45;&gt;D1</title>
+<path d="M106.47,-162.15C102.16,-153.69 96.85,-143.25 92.05,-133.8"/>
+<polygon points="95.12,-132.13 87.47,-124.81 88.88,-135.31 95.12,-132.13"/>
+</g>
+<g class="m-node m-flat">
+<title>A2</title>
+<ellipse cx="199" cy="-252.69" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="199" y="-248.89">A2</text>
+</g>
+<g class="m-node m-flat">
+<title>B2</title>
+<ellipse cx="199" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="199" y="-176.12">B2</text>
+</g>
+<g class="m-edge">
+<title>A2&#45;&gt;B2</title>
+<path d="M199,-234.2C199,-226.52 199,-217.31 199,-208.72"/>
+<polygon points="202.5,-208.71 199,-198.71 195.5,-208.71 202.5,-208.71"/>
+</g>
+<g class="m-node m-flat">
+<title>C2</title>
+<ellipse cx="199" cy="-107.15" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="199" y="-103.35">C2</text>
+</g>
+<g class="m-edge">
+<title>B2&#45;&gt;C2</title>
+<path d="M199,-161.43C199,-153.75 199,-144.54 199,-135.95"/>
+<polygon points="202.5,-135.94 199,-125.94 195.5,-135.94 202.5,-135.94"/>
+</g>
+<g class="m-node m-flat">
+<title>D2</title>
+<ellipse cx="199" cy="-34.38" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="199" y="-30.58">D2</text>
+</g>
+<g class="m-edge">
+<title>C2&#45;&gt;D2</title>
+<path d="M199,-88.66C199,-80.98 199,-71.77 199,-63.19"/>
+<polygon points="202.5,-63.17 199,-53.17 195.5,-63.17 202.5,-63.17"/>
+</g>
+<g class="m-node m-flat">
+<title>A3</title>
+<ellipse cx="356" cy="-252.69" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="356" y="-248.89">A3</text>
+</g>
+<g class="m-node m-flat">
+<title>B3</title>
+<ellipse cx="284" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="284" y="-176.12">B3</text>
+</g>
+<g class="m-edge">
+<title>A3&#45;&gt;B3</title>
+<path d="M341.08,-237.03C331.04,-227.16 317.62,-213.97 306.32,-202.86"/>
+<polygon points="308.48,-200.08 298.9,-195.57 303.58,-205.07 308.48,-200.08"/>
+</g>
+<g class="m-node m-flat">
+<title>C3</title>
+<ellipse cx="356" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="356" y="-176.12">C3</text>
+</g>
+<g class="m-edge">
+<title>A3&#45;&gt;C3</title>
+<path d="M356,-234.2C356,-226.52 356,-217.31 356,-208.72"/>
+<polygon points="359.5,-208.71 356,-198.71 352.5,-208.71 359.5,-208.71"/>
+</g>
+<g class="m-node m-flat">
+<title>D3</title>
+<ellipse cx="428" cy="-179.92" rx="27" ry="18.27"/>
+<text text-anchor="middle" x="428" y="-176.12">D3</text>
+</g>
+<g class="m-edge">
+<title>A3&#45;&gt;D3</title>
+<path d="M370.92,-237.03C380.96,-227.16 394.38,-213.97 405.68,-202.86"/>
+<polygon points="408.42,-205.07 413.1,-195.57 403.52,-200.08 408.42,-205.07"/>
+</g>
+</g>
+</svg>
+</div><p>Each pipe (stage) in the pipeline embeds a taskflow to perform a stage-specific parallel algorithm on an input scheduling token. Parallelism exhibits both inside and outside the three taskflows, combining both <em>task graph parallelism</em> and <em>pipeline parallelism</em>.</p></section><section id="CreateATaskflowProcessingPipeline"><h2><a href="#CreateATaskflowProcessingPipeline">Create a Taskflow Processing Pipeline</a></h2><p>Using the example from the previous section, we create a pipeline of three <em>serial</em> pipes each running a taskflow on a sequence of five scheduling tokens. The overall implementation is shown below:</p><pre class="m-code"><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;taskflow/taskflow.hpp&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;taskflow/algorithm/pipeline.hpp&gt;</span><span class="cp"></span>
+
+<span class="c1">// taskflow on the first pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow1</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A1</span><span class="p">,</span><span class="w"> </span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">,</span><span class="w"> </span><span class="n">D1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">A1</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">D1</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// taskflow on the second pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow2</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A2</span><span class="p">,</span><span class="w"> </span><span class="n">B2</span><span class="p">,</span><span class="w"> </span><span class="n">C2</span><span class="p">,</span><span class="w"> </span><span class="n">D2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="p">.</span><span class="n">linearize</span><span class="p">({</span><span class="n">A2</span><span class="p">,</span><span class="w"> </span><span class="n">B2</span><span class="p">,</span><span class="w"> </span><span class="n">C2</span><span class="p">,</span><span class="w"> </span><span class="n">D2</span><span class="p">});</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// taskflow on the third pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow3</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A3</span><span class="p">,</span><span class="w"> </span><span class="n">B3</span><span class="p">,</span><span class="w"> </span><span class="n">C3</span><span class="p">,</span><span class="w"> </span><span class="n">D3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">A3</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">B3</span><span class="p">,</span><span class="w"> </span><span class="n">C3</span><span class="p">,</span><span class="w"> </span><span class="n">D3</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="w"> </span><span class="n">taskflow</span><span class="p">(</span><span class="s">&quot;taskflow processing pipeline&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Executor</span><span class="w"> </span><span class="n">executor</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">num_lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">num_pipes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1">// define the taskflow storage</span>
+<span class="w">  </span><span class="c1">// we use the pipe dimension because we create three &#39;serial&#39; pipes</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="p">,</span><span class="w"> </span><span class="n">num_pipes</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskflows</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// create three different taskflows for the three pipes</span>
+<span class="w">  </span><span class="n">make_taskflow1</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="w">  </span><span class="n">make_taskflow2</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span><span class="w"></span>
+<span class="w">  </span><span class="n">make_taskflow3</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// the pipeline consists of three serial pipes</span>
+<span class="w">  </span><span class="c1">// and up to two concurrent scheduling tokens</span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeline</span><span class="w"> </span><span class="n">pl</span><span class="p">(</span><span class="n">num_lines</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// first pipe runs taskflow1</span>
+<span class="w">    </span><span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="p">(</span><span class="n">pf</span><span class="p">.</span><span class="n">token</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">pf</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;begin token %zu</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pf</span><span class="p">.</span><span class="n">token</span><span class="p">());</span><span class="w"></span>
+<span class="w">      </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}},</span><span class="w"></span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// second pipe runs taskflow2</span>
+<span class="w">    </span><span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}},</span><span class="w"></span>
+
+<span class="w">    </span><span class="c1">// third pipe calls taskflow3</span>
+<span class="w">    </span><span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// build the pipeline graph using composition</span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](){</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;ready</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">})</span><span class="w"></span>
+<span class="w">                          </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;starting pipeline&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">composed_of</span><span class="p">(</span><span class="n">pl</span><span class="p">)</span><span class="w"></span>
+<span class="w">                          </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;pipeline&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](){</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;stopped</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">})</span><span class="w"></span>
+<span class="w">                          </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;pipeline stopped&quot;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// create task dependency</span>
+<span class="w">  </span><span class="n">init</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">task</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">task</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">stop</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// dump the pipeline graph structure (with composition)</span>
+<span class="w">  </span><span class="n">taskflow</span><span class="p">.</span><span class="n">dump</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// run the pipeline</span>
+<span class="w">  </span><span class="n">executor</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">taskflow</span><span class="p">).</span><span class="n">wait</span><span class="p">();</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span></pre><section id="TaskflowPipelineDefineTaskflows"><h3><a href="#TaskflowPipelineDefineTaskflows">Define Taskflows</a></h3><p>First, we define three taskflows for the three pipes in the pipeline:</p><pre class="m-code"><span class="c1">// taskflow on the first pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow1</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A1</span><span class="p">,</span><span class="w"> </span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">,</span><span class="w"> </span><span class="n">D1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D1</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">A1</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">D1</span><span class="p">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">B1</span><span class="p">,</span><span class="w"> </span><span class="n">C1</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// taskflow on the second pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow2</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A2</span><span class="p">,</span><span class="w"> </span><span class="n">B2</span><span class="p">,</span><span class="w"> </span><span class="n">C2</span><span class="p">,</span><span class="w"> </span><span class="n">D2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D2</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">tf</span><span class="p">.</span><span class="n">linearize</span><span class="p">({</span><span class="n">A2</span><span class="p">,</span><span class="w"> </span><span class="n">B2</span><span class="p">,</span><span class="w"> </span><span class="n">C2</span><span class="p">,</span><span class="w"> </span><span class="n">D2</span><span class="p">});</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// taskflow on the third pipe</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">make_taskflow3</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">A3</span><span class="p">,</span><span class="w"> </span><span class="n">B3</span><span class="p">,</span><span class="w"> </span><span class="n">C3</span><span class="p">,</span><span class="w"> </span><span class="n">D3</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tf</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;A3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;B3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;C3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">},</span><span class="w"></span>
+<span class="w">    </span><span class="p">[](){</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;D3</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">A3</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">B3</span><span class="p">,</span><span class="w"> </span><span class="n">C3</span><span class="p">,</span><span class="w"> </span><span class="n">D3</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span></pre><p>As each taskflow corresponds to a pipe in the pipeline, we create a linear array to store the three taskflows:</p><pre class="m-code"><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="n">tf</span><span class="o">::</span><span class="n">Taskflow</span><span class="p">,</span><span class="w"> </span><span class="n">num_pipes</span><span class="o">&gt;</span><span class="w"> </span><span class="n">taskflows</span><span class="p">;</span><span class="w"></span>
+<span class="n">make_taskflow1</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
+<span class="n">make_taskflow2</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span><span class="w"></span>
+<span class="n">make_taskflow3</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span><span class="w"></span></pre><p>Since the three taskflows are linearly dependent, at most one taskflow will run at a pipe. We can store the three taskflows in a linear array of dimension equal to the number of pipes. If there is a parallel pipe, we need to use two-dimensional array, as multiple taskflows at a stage can run simultaneously across parallel lines.</p></section><section id="TaskflowPipelineDefineThePipes"><h3><a href="#TaskflowPipelineDefineThePipes">Define the Pipes</a></h3><p>The pipe definition is straightforward. Each pipe runs the corresponding taskflow, which can be indexed at <code>taskflows</code> with the pipe&#x27;s identifier, <a href="classtf_1_1Pipeflow.html#a4914c1f381a3016e98285b019cf60d6d" class="m-doc">tf::<wbr />Pipeflow::<wbr />pipe()</a>. The first pipe will cease the pipeline scheduling when it has processed five scheduling tokens:</p><pre class="m-code"><span class="c1">// first pipe runs taskflow1</span>
+<span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">pf</span><span class="p">.</span><span class="n">token</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">pf</span><span class="p">.</span><span class="n">stop</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;begin token %zu</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">pf</span><span class="p">.</span><span class="n">token</span><span class="p">());</span><span class="w"></span>
+<span class="w">  </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="p">}},</span><span class="w"></span>
+
+<span class="c1">// second pipe runs taskflow2</span>
+<span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="p">}},</span><span class="w"></span>
+
+<span class="c1">// third pipe calls taskflow3</span>
+<span class="n">tf</span><span class="o">::</span><span class="n">Pipe</span><span class="p">{</span><span class="n">tf</span><span class="o">::</span><span class="n">PipeType</span><span class="o">::</span><span class="n">SERIAL</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">tf</span><span class="o">::</span><span class="n">Pipeflow</span><span class="o">&amp;</span><span class="w"> </span><span class="n">pf</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">executor</span><span class="p">.</span><span class="n">run_and_wait</span><span class="p">(</span><span class="n">taskflows</span><span class="p">[</span><span class="n">pf</span><span class="p">.</span><span class="n">pipe</span><span class="p">()]);</span><span class="w"></span>
+<span class="p">}}</span><span class="w"></span></pre><p>At each pipe, we use <a href="classtf_1_1Executor.html#ab05ad34c59cf11a7c4de82cf58bba91e" class="m-doc">tf::<wbr />Executor::<wbr />run_and_wait</a> to execute the corresponding taskflow and wait until the execution completes. This is important because we want te caller thread, which is the worker that invokes the pipe callable, to not block (i.e., <code>executor.run(taskflows[pf.pipe()]).wait()</code>) but participate in the work-stealing loop of the scheduler to avoid deadlock.</p></section><section id="TaskflowPipelineDefineTheTaskGraph"><h3><a href="#TaskflowPipelineDefineTheTaskGraph">Define the Task Graph</a></h3><p>To build up the taskflow for the pipeline, we create a module task with the defined pipeline structure and connect it with two tasks that output helper messages before and after the pipeline:</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](){</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;ready</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">})</span><span class="w"></span>
+<span class="w">                        </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;starting pipeline&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">composed_of</span><span class="p">(</span><span class="n">pl</span><span class="p">)</span><span class="w"></span>
+<span class="w">                        </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;pipeline&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">tf</span><span class="o">::</span><span class="n">Task</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">taskflow</span><span class="p">.</span><span class="n">emplace</span><span class="p">([](){</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;stopped</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">})</span><span class="w"></span>
+<span class="w">                        </span><span class="p">.</span><span class="n">name</span><span class="p">(</span><span class="s">&quot;pipeline stopped&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">init</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">task</span><span class="p">);</span><span class="w"></span>
+<span class="n">task</span><span class="p">.</span><span class="n">precede</span><span class="p">(</span><span class="n">stop</span><span class="p">);</span><span class="w"></span></pre><div class="m-graph"><svg style="width: 24.812rem; height: 17.625rem;" viewBox="0.00 0.00 397.00 281.77">
+<g transform="scale(1 1) rotate(0) translate(4 277.77)">
+<title>Taskflow</title>
+<g class="m-cluster">
+<title>cluster_p0x7ffd7418c200</title>
+<polygon points="8,-8 8,-258.15 231,-258.15 231,-8 8,-8"/>
+<text text-anchor="middle" x="119.5" y="-241.35">Taskflow Processing Pipeline</text>
+</g>
+<g class="m-cluster">
+<title>cluster_p0x7ffd7418c110</title>
+<polygon points="239,-81.77 239,-265.77 381,-265.77 381,-81.77 239,-81.77"/>
+<text text-anchor="middle" x="310" y="-248.97">m1</text>
+</g>
+<g class="m-node m-flat">
+<title>p0x7bc4000142e8</title>
+<ellipse cx="119" cy="-205.77" rx="91.43" ry="18.27"/>
+<text text-anchor="middle" x="119" y="-201.97">starting pipeline</text>
+</g>
+<g class="m-node m-flat">
+<title>p0x7bc4000143d0</title>
+<polygon points="172.5,-125.77 69.5,-125.77 65.5,-121.77 65.5,-89.77 168.5,-89.77 172.5,-93.77 172.5,-125.77"/>
+<polyline points="168.5,-121.77 65.5,-121.77 "/>
+<polyline points="168.5,-121.77 168.5,-89.77 "/>
+<polyline points="168.5,-121.77 172.5,-125.77 "/>
+<text text-anchor="middle" x="119" y="-103.97">pipeline [m1]</text>
+</g>
+<g class="m-edge">
+<title>p0x7bc4000142e8&#45;&gt;p0x7bc4000143d0</title>
+<path d="M119,-187.16C119,-172.86 119,-152.45 119,-136.04"/>
+<polygon points="122.5,-135.94 119,-125.94 115.5,-135.94 122.5,-135.94"/>
+</g>
+<g class="m-node m-flat">
+<title>p0x7bc4000144b8</title>
+<ellipse cx="119" cy="-34.38" rx="94.09" ry="18.27"/>
+<text text-anchor="middle" x="119" y="-30.58">pipeline stopped</text>
+</g>
+<g class="m-edge">
+<title>p0x7bc4000143d0&#45;&gt;p0x7bc4000144b8</title>
+<path d="M119,-89.49C119,-81.63 119,-72.12 119,-63.29"/>
+<polygon points="122.5,-63 119,-53 115.5,-63 122.5,-63"/>
+</g>
+<g class="m-node">
+<title>p0x7bc400014030</title>
+<polygon points="308,-231.77 257,-205.77 308,-179.77 359,-205.77 308,-231.77"/>
+<text text-anchor="middle" x="308" y="-201.97">cond</text>
+</g>
+<g class="m-node m-flat">
+<title>p0x7bc400014118</title>
+<polygon points="301,-125.77 247,-125.77 247,-121.77 243,-121.77 243,-117.77 247,-117.77 247,-97.77 243,-97.77 243,-93.77 247,-93.77 247,-89.77 301,-89.77 301,-125.77"/>
+<polyline points="247,-121.77 251,-121.77 251,-117.77 247,-117.77 "/>
+<polyline points="247,-97.77 251,-97.77 251,-93.77 247,-93.77 "/>
+<text text-anchor="middle" x="274" y="-103.97">rt&#45;0</text>
+</g>
+<g class="m-edge">
+<title>p0x7bc400014030&#45;&gt;p0x7bc400014118</title>
+<path stroke-dasharray="5,2" d="M297.26,-185.03C293.65,-177.85 289.83,-169.58 287,-161.77 284.05,-153.63 281.55,-144.54 279.55,-136.23"/>
+<polygon points="282.92,-135.22 277.3,-126.23 276.09,-136.76 282.92,-135.22"/>
+<text text-anchor="middle" x="291.5" y="-148.97">0</text>
+</g>
+<g class="m-node m-flat">
+<title>p0x7bc400014200</title>
+<polygon points="373,-125.77 319,-125.77 319,-121.77 315,-121.77 315,-117.77 319,-117.77 319,-97.77 315,-97.77 315,-93.77 319,-93.77 319,-89.77 373,-89.77 373,-125.77"/>
+<polyline points="319,-121.77 323,-121.77 323,-117.77 319,-117.77 "/>
+<polyline points="319,-97.77 323,-97.77 323,-93.77 319,-93.77 "/>
+<text text-anchor="middle" x="346" y="-103.97">rt&#45;1</text>
+</g>
+<g class="m-edge">
+<title>p0x7bc400014030&#45;&gt;p0x7bc400014200</title>
+<path stroke-dasharray="5,2" d="M316.25,-183.94C321.87,-169.73 329.36,-150.8 335.43,-135.48"/>
+<polygon points="338.74,-136.62 339.17,-126.03 332.23,-134.04 338.74,-136.62"/>
+<text text-anchor="middle" x="335.5" y="-148.97">1</text>
+</g>
+</g>
+</svg>
+</div></section><section id="TaskflowPipelineSubmitTheTaskGraph"><h3><a href="#TaskflowPipelineSubmitTheTaskGraph">Submit the Task Graph</a></h3><p>Finally, we submit the taskflow to the execution and run it once:</p><pre class="m-code"><span class="n">executor</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">taskflow</span><span class="p">).</span><span class="n">wait</span><span class="p">();</span><span class="w"></span></pre><p>One possible output is shown below:</p><pre class="m-console"><span class="go">ready</span>
+<span class="go">begin token 0</span>
+<span class="go">A1</span>
+<span class="go">C1</span>
+<span class="go">B1</span>
+<span class="go">D1</span>
+<span class="go">begin token 1</span>
+<span class="go">A2</span>
+<span class="go">B2</span>
+<span class="go">A1</span>
+<span class="go">C1</span>
+<span class="go">B1</span>
+<span class="go">D1</span>
+<span class="go">C2</span>
+<span class="go">D2</span>
+<span class="go">A3</span>
+<span class="go">D3</span>
+<span class="go">C3</span>
+<span class="go">B3</span>
+<span class="go">begin token 2</span>
+<span class="go">A2</span>
+<span class="go">B2</span>
+<span class="go">C2</span>
+<span class="go">D2</span>
+<span class="go">A1</span>
+<span class="go">C1</span>
+<span class="go">B1</span>
+<span class="go">D1</span>
+<span class="go">A3</span>
+<span class="go">D3</span>
+<span class="go">C3</span>
+<span class="go">B3</span>
+<span class="go">A2</span>
+<span class="go">B2</span>
+<span class="go">C2</span>
+<span class="go">D2</span>
+<span class="go">begin token 3</span>
+<span class="go">A3</span>
+<span class="go">D3</span>
+<span class="go">C3</span>
+<span class="go">B3</span>
+<span class="go">A1</span>
+<span class="go">C1</span>
+<span class="go">B1</span>
+<span class="go">D1</span>
+<span class="go">begin token 4</span>
+<span class="go">A2</span>
+<span class="go">A1</span>
+<span class="go">C1</span>
+<span class="go">B1</span>
+<span class="go">D1</span>
+<span class="go">B2</span>
+<span class="go">C2</span>
+<span class="go">D2</span>
+<span class="go">A3</span>
+<span class="go">D3</span>
+<span class="go">C3</span>
+<span class="go">B3</span>
+<span class="go">A2</span>
+<span class="go">B2</span>
+<span class="go">C2</span>
+<span class="go">D2</span>
+<span class="go">A3</span>
+<span class="go">D3</span>
+<span class="go">C3</span>
+<span class="go">B3</span>
+<span class="go">stopped</span></pre></section></section>
+      </div>
+    </div>
+  </div>
+</article></main>
+<div class="m-doc-search" id="search">
+  <a href="#!" onclick="return hideSearch()"></a>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-m-8 m-push-m-2">
+        <div class="m-doc-search-header m-text m-small">
+          <div><span class="m-label m-default">Tab</span> / <span class="m-label m-default">T</span> to search, <span class="m-label m-default">Esc</span> to close</div>
+          <div id="search-symbolcount">&hellip;</div>
+        </div>
+        <div class="m-doc-search-content">
+          <form>
+            <input type="search" name="q" id="search-input" placeholder="Loading &hellip;" disabled="disabled" autofocus="autofocus" autocomplete="off" spellcheck="false" />
+          </form>
+          <noscript class="m-text m-danger m-text-center">Unlike everything else in the docs, the search functionality <em>requires</em> JavaScript.</noscript>
+          <div id="search-help" class="m-text m-dim m-text-center">
+            <p class="m-noindent">Search for symbols, directories, files, pages or
+            modules. You can omit any prefix from the symbol or file path; adding a
+            <code>:</code> or <code>/</code> suffix lists all members of given symbol or
+            directory.</p>
+            <p class="m-noindent">Use <span class="m-label m-dim">&darr;</span>
+            / <span class="m-label m-dim">&uarr;</span> to navigate through the list,
+            <span class="m-label m-dim">Enter</span> to go.
+            <span class="m-label m-dim">Tab</span> autocompletes common prefix, you can
+            copy a link to the result using <span class="m-label m-dim">⌘</span>
+            <span class="m-label m-dim">L</span> while <span class="m-label m-dim">⌘</span>
+            <span class="m-label m-dim">M</span> produces a Markdown link.</p>
+          </div>
+          <div id="search-notfound" class="m-text m-warning m-text-center">Sorry, nothing was found.</div>
+          <ul id="search-results"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="search-v1.js"></script>
+<script src="searchdata-v1.js" async="async"></script>
+<footer><nav>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <p>Taskflow handbook is part of the <a href="https://taskflow.github.io">Taskflow project</a>, copyright © <a href="https://tsung-wei-huang.github.io/">Dr. Tsung-Wei Huang</a>, 2018&ndash;2022.<br />Generated by <a href="https://doxygen.org/">Doxygen</a> 1.8.20 and <a href="https://mcss.mosra.cz/">m.css</a>.</p>
+      </div>
+    </div>
+  </div>
+</nav></footer>
+</body>
+</html>
