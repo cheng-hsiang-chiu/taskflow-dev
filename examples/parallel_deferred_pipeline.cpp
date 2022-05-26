@@ -75,11 +75,30 @@ int main() {
         else if (pf.token() == 2) {
           switch(pf.deferred()) {
             case 0:
+              pf.defer(3);
+              printf("Scheduling token %zu defers to 3.\n", pf.token());
               pf.defer(8);
               printf("Scheduling token %zu defers to 8.\n", pf.token());
             break;
             case 1:
-              printf("stage 1: Scheduling token 8 is scheduled for token %zu.\n", pf.token());
+              pf.defer(7);
+              printf("Scheduling token %zu defers to 7.\n", pf.token());
+              pf.defer(11);
+              printf("Scheduling token %zu defers to 11.\n", pf.token());
+            break;
+            default:
+              printf("stage 1: Scheduling token 3, 8, 7, 11 are scheduled for token %zu.\n", pf.token());
+            break;
+          }
+        }
+        else if (pf.token() == 7) {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(10);
+              printf("Scheduling token %zu defers to 10.\n", pf.token());
+            break;
+            default:
+              printf("stage 1: Scheduling token 10 is scheduled for token %zu.\n", pf.token());
             break;
           }
         }
