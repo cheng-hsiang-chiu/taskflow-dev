@@ -625,7 +625,11 @@ void Pipeline<Ps...>::_build() {
         
         //pf->_token = _num_tokens;
         // chiu
-      
+        //
+      pipeline_on_pipe: 
+     
+        size_t ori_pf_deferred = pf->_deferred;
+        
         if (pf->_stop = false, _on_pipe(*pf, rt); pf->_stop == true) {
           // here, the pipeline is not stopped yet because other
           // lines of tasks may still be running their last stages
@@ -640,9 +644,9 @@ void Pipeline<Ps...>::_build() {
         {
           std::lock_guard lock{_mutex};
           //pf->_deferred = pf->_defers.size()?pf->_deferred+1:pf->_deferred;
-          //printf("%zu has defers size of %zu\n", pf->_token, pf->_defers.size()); 
+          //printf("Token %zu has defers size of %zu\n", pf->_token, pf->_defers.size()); 
           //printf("1.defers[0] = %zu\n", *(pf->_defers.begin())); 
-         
+          
           if (pf->_defers.size()) {
             ++pf->_deferred;
             for (std::list<size_t>::iterator it = pf->_defers.begin();
@@ -653,9 +657,11 @@ void Pipeline<Ps...>::_build() {
                 ++it;
               }
               else {
-                auto pit = std::find_if(_deferred_tokens.begin(),
-                                        _deferred_tokens.end(),
-                                        [&it](Pipeflow temp){ return temp._token == *it; });
+                auto pit = std::find_if(
+                  _deferred_tokens.begin(),
+                  _deferred_tokens.end(),
+                  [&it](Pipeflow temp){ return temp._token == *it; }
+                );
 
                 if (pit != _deferred_tokens.end()) {
                   ++it;  
@@ -670,11 +676,15 @@ void Pipeline<Ps...>::_build() {
           if (pf->_defers.size()) {
             //++pf->_deferred;
             //printf("%zu has deferred = %zu\n", pf->_token, pf->_deferred); 
+            //printf("Push token %zu in unresolved queuen\n", pf->_token); 
             _deferred_tokens.push_back(*pf);
             
             pf->_defers.clear();
             pf->_deferred = 0;
             goto pipeline;
+          }
+          else if (ori_pf_deferred != pf->_deferred) {
+            goto pipeline_on_pipe;
           }
         }
 
@@ -739,16 +749,16 @@ void Pipeline<Ps...>::_build() {
               }
             }
           }
-          
-          if (!_ready_tokens.empty()) {
-            Pipeflow temp = _ready_tokens.front();
-            //printf("token %zu has ready_tokens with token %zu\n", pf->_token, temp._token);
-            temp._line = n_l;
-            temp._pipe = 0;
-            _ready_tokens.pop();
-            //goto pipeline;
-            _pipeflows[n_l] = temp;
-          }
+          //printf("From token %zu : Ready queue has %zu tokens\n", pf->_token, _ready_tokens.size()); 
+          //if (!_ready_tokens.empty()) {
+          //  Pipeflow temp = _ready_tokens.front();
+          //  //printf("token %zu has ready_tokens with token %zu\n", pf->_token, temp._token);
+          //  temp._line = n_l;
+          //  temp._pipe = 0;
+          //  _ready_tokens.pop();
+          //  //goto pipeline;
+          //  _pipeflows[n_l] = temp;
+          //}
         }
       }
       // chiu
@@ -756,12 +766,71 @@ void Pipeline<Ps...>::_build() {
       // notice that the task index starts from 1
       switch(n) {
         case 2: {
+          {
+            std::lock_guard lock{_mutex};
+            if (c_f == 0 && !_ready_tokens.empty()) {
+              Pipeflow temp = _ready_tokens.front();
+              //printf("token %zu has ready_tokens with token %zu\n", pf->_token, temp._token);
+              temp._line = n_l;
+              temp._pipe = 0;
+              _ready_tokens.pop();
+              //goto pipeline;
+              _pipeflows[n_l] = temp;
+            }
+          }
+          {
+            std::lock_guard lock{_mutex};
+            if (c_f == num_pipes()-1 && !_ready_tokens.empty()) {
+              Pipeflow temp = _ready_tokens.front();
+              //printf("case = 2, current pipe = %zu, and new token = %zu\n", c_f, temp._token);
+              //temp._line = pf->_line;
+              //temp._pipe = 0;
+              _ready_tokens.pop();
+              //goto pipeline;
+              pf->_pipe = 0;
+              pf->_deferred = temp._deferred;
+              pf->_token = temp._token;
+              pf->_defers.clear();
+            }
+          }
           rt.schedule(_tasks[n_l+1]);
           goto pipeline;
         }
         case 1: {
+          // downward dependency 
           if (retval[0] == 1) {
+            {
+              std::lock_guard lock{_mutex};
+              if (c_f == 0 && !_ready_tokens.empty()) {
+                Pipeflow temp = _ready_tokens.front();
+                //printf("token %zu has ready_tokens with token %zu\n", pf->_token, temp._token);
+                temp._line = n_l;
+                temp._pipe = 0;
+                _ready_tokens.pop();
+                //goto pipeline;
+                _pipeflows[n_l] = temp;
+              }
+            }
             pf = &_pipeflows[n_l];
+          }
+          // forward dependency
+          else {
+            {
+              std::lock_guard lock{_mutex};
+              if (c_f == num_pipes()-1 && !_ready_tokens.empty()) {
+                Pipeflow temp = _ready_tokens.front();
+                //printf("case = 1, current pipe = %zu, and new token = %zu\n", c_f, temp._token);
+                //temp._line = pf->_line;
+                //temp._pipe = 0;
+                _ready_tokens.pop();
+                //goto pipeline;
+                //pf = &temp;
+                pf->_pipe = 0;
+                pf->_deferred = temp._deferred;
+                pf->_token = temp._token;
+                pf->_defers.clear();
+              }
+            }
           }
           goto pipeline;
         }

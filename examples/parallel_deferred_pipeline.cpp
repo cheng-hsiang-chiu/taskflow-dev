@@ -26,7 +26,7 @@
 //         ^       | 
 //         |_______|
 
-
+/*
 #include <taskflow/taskflow.hpp>
 #include <taskflow/algorithm/pipeline.hpp>
 
@@ -75,30 +75,11 @@ int main() {
         else if (pf.token() == 2) {
           switch(pf.deferred()) {
             case 0:
-              pf.defer(3);
-              printf("Scheduling token %zu defers to 3.\n", pf.token());
               pf.defer(8);
               printf("Scheduling token %zu defers to 8.\n", pf.token());
             break;
             case 1:
-              pf.defer(7);
-              printf("Scheduling token %zu defers to 7.\n", pf.token());
-              pf.defer(11);
-              printf("Scheduling token %zu defers to 11.\n", pf.token());
-            break;
-            default:
-              printf("stage 1: Scheduling token 3, 8, 7, 11 are scheduled for token %zu.\n", pf.token());
-            break;
-          }
-        }
-        else if (pf.token() == 7) {
-          switch(pf.deferred()) {
-            case 0:
-              pf.defer(10);
-              printf("Scheduling token %zu defers to 10.\n", pf.token());
-            break;
-            default:
-              printf("stage 1: Scheduling token 10 is scheduled for token %zu.\n", pf.token());
+              printf("stage 1: Scheduling token 8 is scheduled for token %zu.\n", pf.token());
             break;
           }
         }
@@ -125,6 +106,116 @@ int main() {
       // propagate the previous result to this pipe and increment
       // it by one
       buffer[pf.line()] = buffer[pf.line()] + 1;
+    }}
+  );
+  
+  // build the pipeline graph using composition
+  tf::Task init = taskflow.emplace([](){ std::cout << "ready\n"; })
+                          .name("starting pipeline");
+  tf::Task task = taskflow.composed_of(pl)
+                          .name("deferred_pipeline");
+  tf::Task stop = taskflow.emplace([](){ std::cout << "stopped\n"; })
+                          .name("pipeline stopped");
+
+  // create task dependency
+  init.precede(task);
+  task.precede(stop);
+  
+  // dump the pipeline graph structure (with composition)
+  taskflow.dump(std::cout);
+
+  // run the pipeline
+  executor.run(taskflow).wait();
+  
+  return 0;
+}
+*/
+
+
+#include <taskflow/taskflow.hpp>
+#include <taskflow/algorithm/pipeline.hpp>
+
+int main() {
+
+  tf::Taskflow taskflow("deferred_pipeline");
+  tf::Executor executor(4);
+
+  const size_t num_lines = 4;
+
+  // custom data storage
+  std::array<int, num_lines> buffer;
+
+  tf::Pipeline pl(num_lines,
+    tf::Pipe{tf::PipeType::SERIAL, [&buffer](tf::Pipeflow& pf) {
+      if(pf.token() == 10) {
+        pf.stop();
+      }
+
+      else {
+        if (pf.token() == 0 || pf.token() == 6) {
+          printf("stage 1: input token = %zu at line %zu\n", pf.token(), pf.line());
+        }
+        else if (pf.token() == 1 || pf.token() == 2 || pf.token() == 3) {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(0);
+              pf.defer(4);
+              printf("Scheduling token %zu defers to 0 and 4.\n", pf.token());
+              return;  
+            break;
+
+            case 1:
+              printf("stage 1: Scheduling tokens 0 and 4 are scheduled for token %zu at line %zu.\n", pf.token(), pf.line());
+            break;
+          }
+        }
+        else if (pf.token() == 4) {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(0);
+              printf("Scheduling token %zu defers to 0.\n", pf.token());
+              return;  
+            break;
+
+            case 1:
+              printf("stage 1: Scheduling token 0 is scheduled for token %zu at line %zu.\n", pf.token(), pf.line());
+            break;
+          }
+        }
+        else if (pf.token() == 5) {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(4);
+              printf("Scheduling token %zu defers to 4.\n", pf.token());
+              return;  
+            break;
+
+            case 1:
+              printf("stage 1: Scheduling token 4 is scheduled for token %zu at line %zu.\n", pf.token(), pf.line());
+            break;
+          }
+        }
+        else if (pf.token() == 7 || pf.token() == 8 || pf.token() == 9) {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(6);
+              printf("Scheduling token %zu defers to 6.\n", pf.token());
+              return;  
+            break;
+
+            case 1:
+              printf("stage 1: Scheduling token 6 is scheduled for token %zu at line %zu.\n", pf.token(), pf.line());
+            break;
+          }
+        }
+        //else {
+        //  printf("stage 1: input token = %zu at line %zu\n", pf.token(), pf.line());
+        //}
+      }
+    }},
+
+    tf::Pipe{tf::PipeType::SERIAL, [&buffer](tf::Pipeflow& pf) {
+      printf("stage 2: token %zu at line %zu\n", pf.token(),  pf.line());
     }}
   );
   
