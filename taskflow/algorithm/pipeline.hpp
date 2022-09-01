@@ -718,25 +718,6 @@ void Pipeline<Ps...>::_build() {
       // d will be spawned by either c or b, so if c changes f but b spawns d
       // then data race on f will happen
 
-      std::array<int, 2> retval;
-      size_t n = 0;
-
-      // downward dependency
-      if(_meta[c_f].type == PipeType::SERIAL &&
-         _lines[n_l][c_f].join_counter.fetch_sub(
-           1, std::memory_order_acq_rel) == 1
-        ) {
-        retval[n++] = 1;
-      }
-
-      // forward dependency
-      if(_lines[pf->_line][n_f].join_counter.fetch_sub(
-          1, std::memory_order_acq_rel) == 1
-        ) {
-        retval[n++] = 0;
-      }
-
-      // chiu
       { 
         std::lock_guard lock{_mutex};
         if (c_f == 0) {
@@ -762,6 +743,23 @@ void Pipeline<Ps...>::_build() {
         }
       }
       // chiu
+      std::array<int, 2> retval;
+      size_t n = 0;
+
+      // downward dependency
+      if(_meta[c_f].type == PipeType::SERIAL &&
+         _lines[n_l][c_f].join_counter.fetch_sub(
+           1, std::memory_order_acq_rel) == 1
+        ) {
+        retval[n++] = 1;
+      }
+
+      // forward dependency
+      if(_lines[pf->_line][n_f].join_counter.fetch_sub(
+          1, std::memory_order_acq_rel) == 1
+        ) {
+        retval[n++] = 0;
+      }
       
       // notice that the task index starts from 1
       switch(n) {

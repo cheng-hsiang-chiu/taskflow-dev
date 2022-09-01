@@ -12,7 +12,7 @@
 #include <algorithm>
 
 
-
+/*
 // ----------------------------------------------------------------------------
 // two pipes (SS), L lines, W workers, defer to the previous token
 // ----------------------------------------------------------------------------
@@ -650,7 +650,7 @@ TEST_CASE("Pipeline.2P(SP).DeferNextToken.4L.3W" * doctest::timeout(300)) {
 TEST_CASE("Pipeline.2P(SP).DeferNextToken.4L.4W" * doctest::timeout(300)) {
   pipeline_2P_SP_DeferNextToken(4, 4);
 }
-
+*/
 
 
 // ----------------------------------------------------------------------------
@@ -760,7 +760,7 @@ void pipeline_2P_SS_264VideoFormat(size_t L, unsigned w) {
           switch(pf.deferred()) {
             case 0:
               if (video[pf.token()].type == 'I') {
-                printf("Stage 1 : token %zu is a I frame on line %zu\n", pf.token() ,pf.line());
+                //printf("Stage 1 : token %zu is a I frame on line %zu\n", pf.token() ,pf.line());
                 collection1.push_back(pf.token());
                 mybuffer[pf.line()][pf.pipe()] = pf.token();           
               }
@@ -806,7 +806,7 @@ void pipeline_2P_SS_264VideoFormat(size_t L, unsigned w) {
             break;
 
             case 1:
-              printf("Stage 1 : token %zu is deferred 1 time at line %zu\n", pf.token(), pf.line());
+              //printf("Stage 1 : token %zu is deferred 1 time at line %zu\n", pf.token(), pf.line());
               collection1.push_back(pf.token());
               mybuffer[pf.line()][pf.pipe()] = pf.token();           
             break;
@@ -827,7 +827,7 @@ void pipeline_2P_SS_264VideoFormat(size_t L, unsigned w) {
     auto test = taskflow.emplace([&](){
       printf("N = %zu and collection1.size() = %zu\n", N, collection1.size());
       for (size_t i = 0; i < collection1.size(); ++i) {
-        //printf("collection1[%zu]=%zu, collection2[%zu]=%zu\n", i, collection1[i], i, collection2[i]);
+        printf("collection1[%zu]=%zu, collection2[%zu]=%zu\n", i, collection1[i], i, collection2[i]);
         REQUIRE(collection1[i] == collection2[i]);
       }
 
@@ -840,7 +840,9 @@ void pipeline_2P_SS_264VideoFormat(size_t L, unsigned w) {
         if (video[i].defers.size()) {
           it = std::find(collection1.begin(), collection1.end(), i);
           index_it = std::distance(collection1.begin(), it);
-
+          if (it == collection1.end()) {
+            printf("Token %zu is missing\n", i);
+          }
           for (size_t j = 0; j < video[i].defers.size(); ++j) {
             it_dep = std::find(collection1.begin(), collection1.end(), video[i].defers[j]);
             index_it_dep = std::distance(collection1.begin(), it_dep);
