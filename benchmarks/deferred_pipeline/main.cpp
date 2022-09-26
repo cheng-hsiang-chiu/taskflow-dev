@@ -1,5 +1,7 @@
 #include "deferred_pipeline.hpp"
 #include <CLI11.hpp>
+#include <cstdlib>
+#include <cassert>
 
 int main(int argc, char* argv[]) {
 
@@ -27,6 +29,10 @@ int main(int argc, char* argv[]) {
   app.add_option("-d, --deferred", deferred, "defer to previous/future deferred token (default=-1)");
    
   CLI11_PARSE(app, argc, argv);
+  if (static_cast<int>(num_threads) < deferred) { 
+    std::cerr << "Wrong configuration : deferred must be smaller or equal to num_threads\n";
+    exit(-1);
+  }
 
   std::cout << "model="       << model       << ' '
             << "num_threads=" << num_threads << ' '
