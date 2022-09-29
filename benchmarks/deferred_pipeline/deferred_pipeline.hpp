@@ -58,16 +58,22 @@ inline bool verify(
     if (fid != 0 && fid%frequency != 0) {
       continue;
     }
-    if (fid+deferred < 0 || fid+deferred >= num_frames || (fid+1)%num_threads == 0) {
+    if (fid+deferred < 0 || 
+        fid+deferred >= static_cast<int>(num_frames) || 
+        (fid+1)%num_threads == 0) {
       continue;
     }
 
     auto it  = std::find(vec.begin(), vec.end(), fid);
     auto dit = std::find(vec.begin(), vec.end(), fid+deferred);
     
-    assert(std::distance(dit, it) > 0); 
+    if (std::distance(dit, it) > 0) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
-  return true;
 }
 
 
