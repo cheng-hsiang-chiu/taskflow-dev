@@ -11,7 +11,8 @@ public:
 };
 
 std::chrono::microseconds measure_time_taskflow(
-  size_t  num_threads, size_t frequency, int deferred, size_t num_frames) {
+  size_t  num_threads, size_t frequency, int deferred, size_t num_frames, 
+  bool isverify) {
 
   std::chrono::microseconds elapsed;
   
@@ -19,35 +20,46 @@ std::chrono::microseconds measure_time_taskflow(
   
   tf::Executor executor(num_threads);
 
-  //for (size_t i = 0; i < num_frames; ++i) {
-  //  std::unique_ptr<Frame> p(new Frame(i));
-  //  video.emplace_back(std::move(p));
-  //}
+  std::vector<int> vec;
 
   auto beg = std::chrono::high_resolution_clock::now();
-  
+   
   tf::Pipeline pl(num_threads,
-    tf::Pipe{tf::PipeType::SERIAL, [frequency, num_frames, deferred](tf::Pipeflow& pf) {
+    tf::Pipe{tf::PipeType::SERIAL, [frequency, num_frames, deferred, num_threads, &vec, isverify](tf::Pipeflow& pf) {
       if(pf.token() == num_frames) {
         pf.stop();
       }
 
       else {
-        if (pf.token()%frequency == 0 && 
-            (pf.token()+deferred > 0 || pf.token()+deferred < num_frames) && 
-            pf.token() != 0) {
+        if (pf.token() != 0 && pf.token()%frequency != 0) {
+          if (isverify) {
+            vec.push_back(pf.token());  
+          }
+        }
+        else if (pf.token()+deferred < 0 || pf.token()+deferred >= num_frames || 
+                 (pf.token()+1)%num_threads == 0) {
+          if (isverify) {
+            vec.push_back(pf.token());  
+          }
+        }
+        else {
+          switch(pf.deferred()) {
+            case 0:
+              pf.defer(pf.token()+deferred);
+            break;
 
-         switch(pf.deferred()) {
-           case 0:
-            pf.defer(pf.token()+deferred);
-           break;
-         }
+            default:
+              if (isverify) {
+                vec.push_back(pf.token());
+              }
+            break;
+          }
         }
       }
     }},
     
-    // second serial pipe
-    tf::Pipe{tf::PipeType::SERIAL, [](tf::Pipeflow& pf){
+    // second parallel pipe
+    tf::Pipe{tf::PipeType::PARALLEL, [](tf::Pipeflow& pf){
       work();  
     }}
   );
@@ -58,7 +70,14 @@ std::chrono::microseconds measure_time_taskflow(
   auto end = std::chrono::high_resolution_clock::now();
 
   elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
-  
+ 
+  if (isverify) {  
+    bool passed = verify(num_threads, frequency, deferred, num_frames, vec);
+    if (!passed) {
+      std::cout << "Wrong answer\n";
+    }
+  }
+
   return elapsed;
 }
 

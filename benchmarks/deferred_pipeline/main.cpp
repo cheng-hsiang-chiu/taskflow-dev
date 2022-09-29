@@ -27,10 +27,18 @@ int main(int argc, char* argv[]) {
   
   int deferred{-1};
   app.add_option("-d, --deferred", deferred, "defer to previous/future deferred token (default=-1)");
+
+  bool verify{false};
+  app.add_option("-v, --verify", verify, "whether to verify the result (default=false)");
    
   CLI11_PARSE(app, argc, argv);
-  if (static_cast<int>(num_threads) < deferred) { 
-    std::cerr << "Wrong configuration : deferred must be smaller or equal to num_threads\n";
+  if (static_cast<int>(num_threads) <= deferred) { 
+    std::cerr << "Wrong configuration : deferred must be smaller than num_threads\n";
+    exit(-1);
+  }
+
+  if (deferred == 0) {
+    std::cerr << "Wrong configuration : deferred can not be zero\n";
     exit(-1);
   }
 
@@ -55,10 +63,10 @@ int main(int argc, char* argv[]) {
     for(unsigned j = 0; j < num_rounds; ++j) {
       
       if(model == "tf") {
-        runtime += measure_time_taskflow(num_threads, frequency, deferred, i).count();
+        runtime += measure_time_taskflow(num_threads, frequency, deferred, i, verify).count();
       }
       else if(model == "pthread") {
-        runtime += measure_time_pthread(num_threads, frequency, deferred, i).count();
+        runtime += measure_time_pthread(num_threads, frequency, deferred, i, verify).count();
       }
     }
 
