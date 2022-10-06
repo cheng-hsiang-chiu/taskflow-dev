@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
   app.add_option("-v, --verify", verify, "whether to verify the result (default=false)");
    
   CLI11_PARSE(app, argc, argv);
+  
   if (static_cast<int>(num_threads) <= deferred) { 
     std::cerr << "Wrong configuration : deferred must be smaller than num_threads\n";
     exit(-1);
