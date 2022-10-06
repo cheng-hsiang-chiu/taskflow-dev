@@ -138,7 +138,7 @@ int main() {
 int main() {
 
   tf::Taskflow taskflow("deferred_pipeline");
-  tf::Executor executor(4);
+  tf::Executor executor(1);
 
   const size_t num_lines = 4;
 
