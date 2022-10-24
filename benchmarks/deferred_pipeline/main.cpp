@@ -22,32 +22,22 @@ int main(int argc, char* argv[]) {
       return "";
     });
 
-  size_t frequency {1};
-  app.add_option("-f, --frequency", frequency, "frequency of deferred token (default=1)");
-  
-  int deferred{-1};
-  app.add_option("-d, --deferred", deferred, "defer to previous/future deferred token (default=-1)");
+  std::string vtype = "1";
+  app.add_option("-v, --vtype", vtype, "x264 video types (default=1). Check deferred_pipeline.hpp for detailed frame patterns.")
+    ->check([] (const std::string& v) {
+      if(v != "1" && v != "2") {
+        return "video types should be \"1\" or \"2\"";
+      }
+      return "";
+    });
 
-  bool verify{false};
-  app.add_option("-v, --verify", verify, "whether to verify the result (default=false)");
    
   CLI11_PARSE(app, argc, argv);
   
-  if (static_cast<int>(num_threads) <= deferred) { 
-    std::cerr << "Wrong configuration : deferred must be smaller than num_threads\n";
-    exit(-1);
-  }
-
-  if (deferred == 0) {
-    std::cerr << "Wrong configuration : deferred can not be zero\n";
-    exit(-1);
-  }
-
   std::cout << "model="       << model       << ' '
             << "num_threads=" << num_threads << ' '
             << "num_rounds="  << num_rounds  << ' '
-            << "frequency="   << frequency   << ' '
-            << "deferred="    << deferred    << ' '
+            << "video_type="  << vtype        << ' '
             << std::endl;
 
   std::cout << std::setw(12) << "Size"
@@ -64,10 +54,10 @@ int main(int argc, char* argv[]) {
     for(unsigned j = 0; j < num_rounds; ++j) {
       
       if(model == "tf") {
-        runtime += measure_time_taskflow(num_threads, frequency, deferred, i, verify).count();
+        runtime += measure_time_taskflow(num_threads, vtype, i).count();
       }
       else if(model == "pthread") {
-        runtime += measure_time_pthread(num_threads, frequency, deferred, i, verify).count();
+        runtime += measure_time_pthread(num_threads, vtype, i).count();
       }
     }
 

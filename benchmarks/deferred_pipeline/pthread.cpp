@@ -4,16 +4,18 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-
+#include <cassert>
 
 class Frame {
 public:
   bool processed = false;
   size_t fid;
+  char ftype;
   std::mutex m;                                                                                          
   std::condition_variable  cv;
+  std::vector<int> depend_on;
 
-  Frame(size_t i) : fid{i} {}
+  Frame(size_t i, char t) : fid{i}, ftype{t} {}
 };
 
 std::vector<std::unique_ptr<Frame>> video;
@@ -22,69 +24,68 @@ std::vector<int> vec1;
 std::mutex global_m;
 
 void encode_frame(const size_t idx, const size_t num_threads,
-  const size_t frequency, const int deferred, const size_t num_frames, bool isverify) {
+  const size_t num_frames) {
    
   size_t fid;
   size_t iterations = num_frames/num_threads;
 
   for (size_t i = 0; i < iterations; ++i) {
     fid = num_threads*i+idx;
-    //printf("fid = %ld\n", fid);
 
-    if (fid != 0 && fid%frequency != 0) {
-      {
-        if (isverify) {
-          std::unique_lock lk(global_m);
-          vec1.push_back(fid);
-        }
-      }
-      std::unique_lock lk(video[fid]->m);
-      //printf("Thread %ld works on video[%ld]\n",
-      //       std::hash<std::thread::id>{}(std::this_thread::get_id()),
-      //       fid);
-      work();
+    // I frame does not have any depency
+    if (video[fid]->ftype == 'I') {
+      std::unique_lock lk(video[fid]->m);  
+      work_I();
       video[fid]->processed = true;
       video[fid]->cv.notify_all();
-      continue; 
+      continue;
     }
 
-    //if (fid+deferred < 0 || fid+deferred >= video.size()) {
-    if (fid+deferred < 0 || fid+deferred >= num_frames || ((fid>0) && ((fid+1)%num_threads == 0))) {
+    else if (video[fid]->ftype == 'P') {
+      // wait on the dependency 
       {
-        if (isverify) {
-          std::unique_lock lk(global_m);
-          vec1.push_back(fid);
-        }
+        int depend_on_id = video[fid]->depend_on[0];
+
+        std::unique_lock lk(video[depend_on_id]->m);
+        video[depend_on_id]->cv.wait(lk, [&]{
+          return video[depend_on_id]->processed; 
+        });
       }
-      std::unique_lock lk(video[fid]->m);
-        //printf("Thread %ld works on video[%ld]\n",
-        //       std::hash<std::thread::id>{}(std::this_thread::get_id()),
-        //       fid);
-      work();
-      video[fid]->processed = true;
-      video[fid]->cv.notify_all();
+      // dependency is resolved
+      {
+        std::unique_lock lk(video[fid]->m);
+        work_P();
+        video[fid]->processed = true;
+        video[fid]->cv.notify_all();
+      }
     }
 
     else {
+      // wait on the first dependency
+      int depend_on_id = video[fid]->depend_on[0];
       {
-        std::unique_lock lk(video[fid+deferred]->m);
-        //printf("Thread %ld waits on video[%ld]\n",
-        //       std::hash<std::thread::id>{}(std::this_thread::get_id()),
-        //       fid+deferred);
-        video[fid+deferred]->cv.wait(lk, [&]{ return video[fid+deferred]->processed; });
+        std::unique_lock lk(video[depend_on_id]->m);
+        video[depend_on_id]->cv.wait(lk, [&]{
+          return video[depend_on_id]->processed; 
+        });
       }
+
+      // wait on the second dependency
+      if (video[fid]->depend_on.size() > 1) {
+        depend_on_id = video[fid]->depend_on[1];
+      }
+      
       {
-        {
-          if (isverify) {
-            std::unique_lock lk(global_m);
-            vec1.push_back(fid);
-          }
-        }
+        std::unique_lock lk(video[depend_on_id]->m);
+        video[depend_on_id]->cv.wait(lk, [&]{
+          return video[depend_on_id]->processed; 
+        });
+      }
+      
+      // dependency is resolved
+      {
         std::unique_lock lk(video[fid]->m);
-        //printf("Thread %ld works on video[%ld]\n",
-        //       std::hash<std::thread::id>{}(std::this_thread::get_id()),
-        //       fid);
-        work();
+        work_B();
         video[fid]->processed = true;
         video[fid]->cv.notify_all();
       }
@@ -93,25 +94,71 @@ void encode_frame(const size_t idx, const size_t num_threads,
 }
 
 std::chrono::microseconds measure_time_pthread(
-  size_t  num_threads, size_t frequency, int deferred, size_t num_frames,
-  bool isverify) {
+  size_t  num_threads, std::string type, size_t num_frames) {
 
   std::chrono::microseconds elapsed;
   
   std::vector<std::thread> threads;
-  //std::cout << "number of frames = " << num_frames << '\n';
+  
   for (size_t i = 0; i < num_frames; ++i) {
-    std::unique_ptr<Frame> p(new Frame(i));
-    video.emplace_back(std::move(p));
+    // x264 frame pattern is viedo_1
+    // video_1 has 128 frames in total
+    if (type == "1") {
+      std::unique_ptr<Frame> p(new Frame(i, video_1[i%128]));
+      video.emplace_back(std::move(p));
+    }
+    // x264 frame pattern is video_2.
+    // video_2 has 300 frames in total.
+    else {
+      std::unique_ptr<Frame> p(new Frame(i, video_2[i%300]));
+      video.emplace_back(std::move(p));
+    }
   }
-  if (isverify) {
-    vec1.clear();
+
+  // construct the depend_on vector of each frame
+  for (size_t i = 0; i < num_frames; ++i) {
+    // I frames do not depend on other frames
+    if (video[i]->ftype == 'I') {
+      continue;
+    }
+    // P frames depend on its previous I or P frame
+    // have one dependency
+    else if (video[i]->ftype == 'P') {
+      int p_idx = i-1;
+      while(p_idx >= 0) {
+        if (video[p_idx]->ftype == 'I' || video[p_idx]->ftype == 'P') {
+          video[i]->depend_on.push_back(p_idx);
+          break; 
+        }
+        --p_idx;
+      }
+    }
+    // B frames depend on its previous I or P frame and its later I or P frame
+    // have up to two dependencies
+    else {
+      int p_idx = i-1, l_idx = i+1;
+      while(p_idx >= 0) {
+        if (video[p_idx]->ftype == 'I' || video[p_idx]->ftype == 'P') {
+          video[i]->depend_on.push_back(p_idx);
+          break;
+        }
+        --p_idx;
+      }
+      while(l_idx < num_frames) {
+        if (video[l_idx]->ftype == 'I' || video[l_idx]->ftype == 'P') {
+          video[i]->depend_on.push_back(l_idx);
+          break;
+        }
+        ++l_idx;
+      }
+    }
   }
+
   auto beg = std::chrono::high_resolution_clock::now();
   
   for (size_t i = 0; i < num_threads; ++i) {
     threads.emplace_back(
-      std::thread(encode_frame, i, num_threads, frequency, deferred, num_frames, isverify));
+      std::thread(encode_frame, i, num_threads, num_frames));
   }
   
   // join all threads
@@ -123,12 +170,6 @@ std::chrono::microseconds measure_time_pthread(
   
   elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
 
-  if (isverify) {
-    bool passed = verify(num_threads, frequency, deferred, num_frames, vec1);
-    if (!passed) {
-      std::cout << "Wrong answer\n";
-    }
-  }
   
   return elapsed;
 }
